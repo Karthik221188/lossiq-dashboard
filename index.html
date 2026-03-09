@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LossIQ — Shipment Loss Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500&family=Nunito+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d16;--surface:#0f1724;--s2:#162032;--s3:#1c2a40;
+  --border:#1e3050;--b2:#243a58;
+  --red:#e8423a;--orange:#f97316;--blue:#3b82f6;--green:#10b981;--yellow:#fbbf24;--purple:#8b5cf6;
+  --text:#eef2ff;--t2:#7e9ab8;--t3:#3d5a7a;
+  --mono:'JetBrains Mono',monospace;--sans:'Nunito Sans',sans-serif;--hd:'Bebas Neue',sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);
+  background-image:radial-gradient(ellipse at 15% 50%,rgba(232,66,58,.1) 0%,transparent 55%),
+    radial-gradient(ellipse at 85% 20%,rgba(59,130,246,.08) 0%,transparent 50%)}
+.lbox{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:44px 40px;width:420px;
+  box-shadow:0 40px 80px rgba(0,0,0,.7);animation:slideUp .4s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.llogo{font-family:var(--hd);font-size:2rem;letter-spacing:2px;margin-bottom:4px}
+.llogo span{color:var(--red)}
+.lsub{font-size:.75rem;color:var(--t2);margin-bottom:32px;letter-spacing:.5px}
+.llabel{font-size:.68rem;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px}
+.linput{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;
+  color:var(--text);font-family:var(--mono);font-size:.88rem;outline:none;transition:border-color .2s;margin-bottom:16px}
+.linput:focus{border-color:var(--blue)}
+.linput::placeholder{color:var(--t3)}
+.lselect{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;
+  color:var(--text);font-family:var(--sans);font-size:.88rem;outline:none;margin-bottom:16px;cursor:pointer}
+.lselect option{background:var(--s2)}
+.lbtn{width:100%;background:var(--red);border:none;border-radius:10px;color:#fff;font-family:var(--hd);
+  font-size:1.1rem;letter-spacing:1px;padding:12px;cursor:pointer;transition:all .2s;margin-top:4px}
+.lbtn:hover{background:#c93028;transform:translateY(-1px);box-shadow:0 8px 24px rgba(232,66,58,.3)}
+.lerr{color:var(--red);font-size:.75rem;text-align:center;margin-top:10px;display:none}
+.lhint{font-size:.68rem;color:var(--t3);text-align:center;margin-top:18px;line-height:1.7}
+
+/* ── TOPBAR ── */
+#app{display:none}
+.topbar{position:sticky;top:0;z-index:500;height:58px;
+  background:rgba(8,13,22,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+.tlogo{font-family:var(--hd);font-size:1.4rem;letter-spacing:1.5px}
+.tlogo span{color:var(--red)}
+.tright{display:flex;align-items:center;gap:12px}
+.upill{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:30px;padding:4px 12px 4px 4px}
+.uavatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--red),var(--orange));
+  display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;color:#fff;font-family:var(--hd)}
+.uname{font-size:.75rem;font-weight:700}
+.urole{font-size:.6rem;color:var(--orange);font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.ibtn{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;
+  color:var(--t2);font-size:.72rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:var(--sans)}
+.ibtn:hover{border-color:var(--red);color:var(--red)}
+.ibtn.blue:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:13px 18px;font-family:var(--hd);font-size:.85rem;letter-spacing:.8px;color:var(--t2);
+  cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab.admin-tab{display:none}
+
+/* ── LAYOUT ── */
+.content{padding:20px 24px;max-width:1600px;margin:0 auto}
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:18px}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:18px}
+.full{margin-bottom:18px}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.ct{font-family:var(--hd);font-size:1rem;letter-spacing:.5px}
+.cs{font-size:.7rem;color:var(--t2);margin-top:2px}
+.ctag{font-size:.62rem;font-weight:800;padding:3px 9px;border-radius:20px;background:var(--s2);color:var(--t2);border:1px solid var(--border);white-space:nowrap}
+
+/* ── SECTION HEADING ── */
+.sh{font-family:var(--hd);font-size:1.3rem;letter-spacing:1px;border-left:4px solid var(--red);
+  padding-left:12px;margin:22px 0 14px;text-transform:uppercase}
+.sh.blue{border-color:var(--blue)}
+.sh.green{border-color:var(--green)}
+.sh.orange{border-color:var(--orange)}
+.sh.yellow{border-color:var(--yellow)}
+
+/* ── KPI ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;
+  position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.red::after{background:var(--red)}.kpi.orange::after{background:var(--orange)}
+.kpi.blue::after{background:var(--blue)}.kpi.green::after{background:var(--green)}
+.kpi.yellow::after{background:var(--yellow)}.kpi.purple::after{background:var(--purple)}
+.klabel{font-size:.62rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.9px;margin-bottom:8px}
+.kval{font-family:var(--hd);font-size:1.7rem;letter-spacing:.5px;line-height:1;margin-bottom:4px}
+.kval.red{color:var(--red)}.kval.orange{color:var(--orange)}.kval.blue{color:var(--blue)}
+.kval.green{color:var(--green)}.kval.yellow{color:var(--yellow)}
+.ksub{font-size:.68rem;color:var(--t2)}
+
+/* ── METRIC PILL ── */
+.mprow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mp{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 10px;
+  flex:1;min-width:90px;text-align:center}
+.mplabel{font-size:.58rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+.mpval{font-family:var(--hd);font-size:1.2rem;letter-spacing:.3px;line-height:1}
+.mpval.red{color:var(--red)}.mpval.blue{color:var(--blue)}.mpval.green{color:var(--green)}
+.mpval.orange{color:var(--orange)}.mpval.yellow{color:var(--yellow)}
+
+/* ── FILTER BAR ── */
+.fbar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+.fbar-title{font-size:.62rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.frow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:5px;min-width:130px;flex:1}
+.flabel{font-size:.62rem;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.8px}
+.fsel,.finput{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 11px;
+  color:var(--text);font-family:var(--sans);font-size:.78rem;outline:none;cursor:pointer;transition:border-color .2s}
+.fsel:focus,.finput:focus{border-color:var(--blue)}
+.fsel option{background:var(--s2)}
+.fbtn{background:var(--blue);border:none;border-radius:8px;padding:7px 16px;color:#fff;
+  font-weight:800;font-size:.75rem;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:var(--sans)}
+.fbtn:hover{background:#2563eb}
+.fbtn.reset{background:var(--s2);color:var(--t2);border:1px solid var(--border)}
+.fbtn.reset:hover{border-color:var(--red);color:var(--red)}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;max-height:460px;overflow-y:auto}
+.dt{width:100%;border-collapse:collapse;font-size:.76rem}
+.dt th{position:sticky;top:0;background:var(--s2);padding:9px 11px;text-align:left;
+  font-size:.6rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;
+  border-bottom:1px solid var(--border);white-space:nowrap}
+.dt td{padding:9px 11px;border-bottom:1px solid rgba(30,48,80,.4);color:var(--text);white-space:nowrap;vertical-align:middle}
+.dt tbody tr:hover{background:var(--s2)}
+.dt tbody tr:last-child td{border-bottom:none}
+.dt .mono{font-family:var(--mono);font-size:.7rem}
+.dt .vred{color:var(--red);font-weight:700}.dt .vblue{color:var(--blue)}.dt .vgreen{color:var(--green)}
+.dt .vorange{color:var(--orange)}.dt .vyellow{color:var(--yellow)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.65rem;font-weight:800}
+.badge.fwd{background:rgba(59,130,246,.15);color:var(--blue)}
+.badge.rto{background:rgba(249,115,22,.15);color:var(--orange)}
+.badge.ok{background:rgba(16,185,129,.15);color:var(--green)}
+.badge.warn{background:rgba(232,66,58,.15);color:var(--red)}
+.badge.admin{background:rgba(249,115,22,.2);color:var(--orange)}
+.badge.user{background:rgba(59,130,246,.15);color:var(--blue)}
+.badge.super{background:rgba(232,66,58,.2);color:var(--red)}
+
+/* ── RANK TABLE extras ── */
+.medal{width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800}
+.m1{background:rgba(251,191,36,.2);color:var(--yellow)}
+.m2{background:rgba(148,163,184,.15);color:#94a3b8}
+.m3{background:rgba(249,115,22,.15);color:var(--orange)}
+.mn{background:var(--s2);color:var(--t3);font-size:.58rem}
+.cbar{height:18px;background:var(--s2);border-radius:4px;overflow:hidden;min-width:60px}
+.cbarfill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 5px;
+  font-size:.58rem;font-weight:800;color:#fff;transition:width .5s}
+.pctbar{display:flex;align-items:center;gap:5px}
+.pctbg{flex:1;height:4px;background:var(--s2);border-radius:4px;overflow:hidden;min-width:30px}
+.pctfill{height:100%;border-radius:4px}
+.good-row td{background:rgba(16,185,129,.04)!important}
+.bad-row td{background:rgba(232,66,58,.04)!important}
+
+/* ── CHARTS ── */
+.chart-wrap{position:relative;width:100%}
+canvas{display:block;width:100%!important}
+
+/* ── RCA ── */
+.rca-box{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.rca-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.rca-field label{font-size:.6rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:3px}
+.rca-field span{font-size:.78rem;font-family:var(--mono)}
+.rta{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:10px;color:var(--text);font-family:var(--sans);font-size:.82rem;outline:none;resize:vertical;min-height:80px}
+.rta:focus{border-color:var(--blue)}
+.rsave{background:var(--green);border:none;border-radius:8px;padding:9px 20px;color:#fff;
+  font-weight:800;cursor:pointer;font-family:var(--sans);transition:all .2s;margin-top:10px}
+.rsave:hover{background:#059669}
+
+/* ── UPLOAD ── */
+.dropzone{border:2px dashed var(--blue);border-radius:12px;padding:32px 20px;text-align:center;
+  cursor:pointer;transition:all .2s;margin-bottom:14px}
+.dropzone:hover,.dropzone.drag{background:rgba(59,130,246,.06);border-color:#60a5fa}
+.dz-icon{font-size:2.4rem;margin-bottom:8px}
+.dz-title{font-size:.9rem;font-weight:800;color:var(--blue);margin-bottom:4px}
+.dz-sub{font-size:.72rem;color:var(--t2)}
+.pbar-wrap{display:none;margin-bottom:12px}
+.pbar-bg{height:6px;background:var(--s2);border-radius:6px;overflow:hidden}
+.pbar-fill{height:100%;background:var(--blue);border-radius:6px;width:0%;transition:width .3s}
+.status-msg{display:none;font-size:.78rem;padding:9px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--border)}
+
+/* ── PROGRESS BAR (RCA) ── */
+.prog-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.prog-label{font-size:.72rem;color:var(--t2);min-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-bg{flex:1;height:5px;background:var(--s2);border-radius:5px;overflow:hidden}
+.prog-fill{height:100%;border-radius:5px;transition:width .5s}
+.prog-pct{font-size:.68rem;font-family:var(--mono);color:var(--t2);min-width:36px;text-align:right}
+
+/* ── PASSWORD CHANGE MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex;animation:fadeIn .2s}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:380px;box-shadow:0 30px 60px rgba(0,0,0,.6)}
+.modal-title{font-family:var(--hd);font-size:1.3rem;letter-spacing:.5px;margin-bottom:20px}
+.modal-close{float:right;cursor:pointer;color:var(--t2);font-size:1.2rem;margin-top:-4px}
+.modal-close:hover{color:var(--text)}
+
+/* ── PTYPE BAR (FWD/RTO contribution) ── */
+.ptbar{height:8px;background:var(--s2);border-radius:8px;overflow:hidden;margin-top:6px}
+.ptfill{height:100%;border-radius:8px;transition:width .5s}
+
+/* ── CHIP GROUP ── */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:4px 12px;border-radius:20px;font-size:.68rem;font-weight:800;cursor:pointer;
+  border:1px solid var(--border);color:var(--t2);background:var(--s2);transition:all .2s}
+.chip.active{background:var(--red);border-color:var(--red);color:#fff}
+
+/* ── DL BTN ── */
+.dl{background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:5px 12px;
+  color:var(--t2);font-size:.68rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .2s;font-family:var(--sans)}
+.dl:hover{border-color:var(--green);color:var(--green)}
+
+/* ── NOTIFICATION TOAST ── */
+#toast{position:fixed;bottom:20px;right:20px;z-index:9999;padding:10px 16px;border-radius:10px;
+  font-size:.75rem;font-weight:700;font-family:var(--mono);opacity:0;transition:opacity .4s;pointer-events:none}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){.g21,.g12{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.g2,.g3,.g4{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr 1fr}.lbox{width:95%;padding:28px 20px}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="loginScreen">
+  <div class="lbox">
+    <div class="llogo">Loss<span>IQ</span></div>
+    <div class="lsub">SHIPMENT LOSS INTELLIGENCE PLATFORM</div>
+    <label class="llabel">Login With</label>
+    <select class="lselect" id="ltype" onchange="toggleLoginType()">
+      <option value="mobile">Mobile Number</option>
+      <option value="email">Email ID</option>
+    </select>
+    <label class="llabel" id="lid-label">Mobile Number</label>
+    <input class="linput" id="lid" type="tel" maxlength="10" placeholder="10-digit mobile" autocomplete="off"/>
+    <label class="llabel">Password</label>
+    <input class="linput" id="lpwd" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="lbtn" onclick="doLogin()">LOGIN</button>
+    <div class="lerr" id="lerr">Invalid credentials. Please try again.</div>
+    <div class="lhint">Super Admin: 9999999999 / Admin@2026<br>Default user password: User@ + last 4 digits of mobile</div>
+  </div>
+</div>
+
+<!-- ═══════════════ CHANGE PASSWORD MODAL ═══════════════ -->
+<div class="modal-overlay" id="pwdModal">
+  <div class="modal">
+    <span class="modal-close" onclick="closePwdModal()">✕</span>
+    <div class="modal-title">🔐 Change Password</div>
+    <label class="llabel">Current Password</label>
+    <input class="linput" id="pwdOld" type="password" placeholder="Current password"/>
+    <label class="llabel">New Password</label>
+    <input class="linput" id="pwdNew" type="password" placeholder="Min 6 characters"/>
+    <label class="llabel">Confirm New Password</label>
+    <input class="linput" id="pwdConfirm" type="password" placeholder="Repeat new password"/>
+    <button class="lbtn" onclick="changePassword()" style="margin-top:4px">Update Password</button>
+    <div class="lerr" id="pwdErr" style="display:none;margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tlogo">Loss<span>IQ</span></div>
+    <div class="tright">
+      <div class="upill">
+        <div class="uavatar" id="uavatar">SA</div>
+        <div>
+          <div class="uname" id="uname">Super Admin</div>
+          <div class="urole" id="urole">Super Admin</div>
+        </div>
+      </div>
+      <button class="ibtn blue" onclick="openPwdModal()">🔐 Password</button>
+      <button class="ibtn" onclick="doLogout()">⏻ Logout</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</div>
+    <div class="tab" data-tab="summary" onclick="switchTab('summary')">📋 Month Summary</div>
+    <div class="tab" data-tab="ranking" onclick="switchTab('ranking')">🏆 Rankings</div>
+    <div class="tab" data-tab="rca" onclick="switchTab('rca')">🔍 RCA Update</div>
+    <div class="tab" data-tab="performance" onclick="switchTab('performance')">📈 My Performance</div>
+    <div class="tab admin-tab" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</div>
+    <div class="tab admin-tab" data-tab="data" onclick="switchTab('data')">📤 Data Upload</div>
+  </div>
+
+  <!-- ═══ CONTENT ═══ -->
+  <div class="content">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="fbar">
+        <div class="fbar-title">🔽 Dashboard Filters</div>
+        <div class="frow">
+          <div class="fg"><div class="flabel">Month</div><select class="fsel" id="fMonth" onchange="applyFilters()"><option value="">All Months</option></select></div>
+          <div class="fg"><div class="flabel">Zone</div><select class="fsel" id="fZone" onchange="applyFilters()"><option value="">All Zones</option></select></div>
+          <div class="fg"><div class="flabel">Regional Head</div><select class="fsel" id="fRH" onchange="applyFilters()"><option value="">All</option></select></div>
+          <div class="fg"><div class="flabel">Cluster Head</div><select class="fsel" id="fCH" onchange="applyFilters()"><option value="">All</option></select></div>
+          <div class="fg"><div class="flabel">Location</div><select class="fsel" id="fLoc" onchange="applyFilters()"><option value="">All</option></select></div>
+          <div class="fg"><div class="flabel">Movement</div><select class="fsel" id="fMov" onchange="applyFilters()"><option value="">All Types</option><option value="Forward">Forward</option><option value="RTO">RTO</option></select></div>
+          <div class="fg"><div class="flabel">Reason L1</div><select class="fsel" id="fR1" onchange="applyFilters()"><option value="">All Reasons</option></select></div>
+          <button class="fbtn reset" onclick="resetFilters()">↺ Reset</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="dashKPI"></div>
+
+      <!-- FWD / RTO cards -->
+      <div class="g2" id="fwdRtoCards"></div>
+
+      <div class="g21">
+        <div class="card"><div class="ch"><div><div class="ct">Month-wise Loss Trend</div><div class="cs">Loss ₹ & AWB count per month</div></div><button class="dl" onclick="exportChart('chartMonth')">⬇ PNG</button></div><div class="chart-wrap" style="height:240px"><canvas id="chartMonth"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Movement Split</div><div class="cs">FWD vs RTO contribution</div></div></div><div class="chart-wrap" style="height:240px"><canvas id="chartMov"></canvas></div></div>
+      </div>
+      <div class="g21">
+        <div class="card"><div class="ch"><div><div class="ct">Reason L1 — AWB & Loss</div><div class="cs">Top loss drivers</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartReason"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Leg-wise Loss</div><div class="cs">By shipping leg</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartLeg"></canvas></div></div>
+      </div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Zone-wise Monthly Trend</div><div class="cs">Cross-zone comparison</div></div><button class="dl" onclick="exportChart('chartZone')">⬇ PNG</button></div>
+        <div class="chart-wrap" style="height:260px"><canvas id="chartZone"></canvas></div>
+      </div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Top 10 Locations by Loss Value</div></div><button class="dl" onclick="dlCSV(topLocCSV(),'top_locations.csv')">⬇ CSV</button></div>
+        <div class="tw"><table class="dt"><thead><tr><th>#</th><th>Location</th><th>Cluster</th><th>Zone</th><th>AWBs</th><th>Loss ₹</th><th>Avg Loss</th><th>FWD</th><th>RTO</th></tr></thead><tbody id="topLocBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ═══ SUMMARY ═══ -->
+    <div class="panel" id="panel-summary">
+      <div class="fbar">
+        <div class="fbar-title">🔽 Summary Filters</div>
+        <div class="frow">
+          <div class="fg"><div class="flabel">Month</div><select class="fsel" id="sMonth" onchange="renderSummary()"><option value="">All Months</option></select></div>
+          <div class="fg"><div class="flabel">Zone</div><select class="fsel" id="sZone" onchange="renderSummary()"><option value="">All Zones</option></select></div>
+          <div class="fg"><div class="flabel">Movement</div><select class="fsel" id="sMov" onchange="renderSummary()"><option value="">All Types</option><option value="Forward">Forward</option><option value="RTO">RTO</option></select></div>
+          <div class="fg"><div class="flabel">Reason L1</div><select class="fsel" id="sR1" onchange="renderSummary()"><option value="">All</option></select></div>
+          <div class="fg"><div class="flabel">Location</div><select class="fsel" id="sLoc" onchange="renderSummary()"><option value="">All</option></select></div>
+          <button class="fbtn reset" onclick="['sMonth','sZone','sMov','sR1','sLoc'].forEach(x=>{const e=document.getElementById(x);if(e)e.value=''});renderSummary()">↺ Reset</button>
+        </div>
+      </div>
+      <div class="kpi-grid" id="summKPI"></div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">Forward Metrics</div></div><span class="badge fwd">FWD</span></div><div id="fwdSumm"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">RTO Metrics</div></div><span class="badge rto">RTO</span></div><div id="rtoSumm"></div></div>
+      </div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Reason L1 — AWB Count · Loss Value · % Contribution</div><div class="cs">Updates with filters</div></div><button class="dl" onclick="dlCSV(reasonCSV(),'reason_l1.csv')">⬇ CSV</button></div>
+        <div class="tw" id="summReasonTbl"></div>
+      </div>
+      <div class="g21">
+        <div class="card"><div class="ch"><div><div class="ct">Reason L1 — AWB Count</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartSummR1AWB"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Reason L1 — Loss Value</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartSummR1Val"></canvas></div></div>
+      </div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Cluster Head × Month Matrix</div><div class="cs">Loss value per cluster per month</div></div><button class="dl" onclick="dlCSV(clusterMonthCSV(),'cluster_month.csv')">⬇ CSV</button></div>
+        <div class="tw" id="clusterMonthTbl"></div>
+      </div>
+    </div>
+
+    <!-- ═══ RANKING ═══ -->
+    <div class="panel" id="panel-ranking">
+      <div class="fbar">
+        <div class="fbar-title">🔽 Ranking Filters — all sections update together</div>
+        <div class="frow">
+          <div class="fg"><div class="flabel">Month</div><select class="fsel" id="rMonth" onchange="renderRanking()"><option value="">All Months</option></select></div>
+          <div class="fg"><div class="flabel">Zone</div><select class="fsel" id="rZone" onchange="renderRanking()"><option value="">All Zones</option></select></div>
+          <div class="fg"><div class="flabel">Regional Head</div><select class="fsel" id="rRH" onchange="renderRanking()"><option value="">All</option></select></div>
+          <div class="fg"><div class="flabel">Cluster Head</div><select class="fsel" id="rCH" onchange="renderRanking()"><option value="">All</option></select></div>
+          <div class="fg"><div class="flabel">Top N</div><select class="fsel" id="rTop" onchange="renderRanking()"><option value="10">Top 10</option><option value="20">Top 20</option><option value="50">Top 50</option><option value="999">All</option></select></div>
+          <button class="fbtn reset" onclick="resetRanking()">↺ Reset</button>
+        </div>
+      </div>
+
+      <!-- ① FWD vs RTO -->
+      <div class="sh blue">① Forward vs RTO — Overall Metrics (Filter-aware)</div>
+      <div class="g2" id="rankFwdRto"></div>
+
+      <!-- ② ZONE -->
+      <div class="sh orange">② Zone-wise — FWD · RTO · Contribution Ranking</div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Zone Ranking Table</div><div class="cs">Total AWBs · Loss Value · Avg Loss · Locations · FWD% · RTO%</div></div><button class="dl" onclick="dlCSV(rankCSV('Zone'),'zone_rank.csv')">⬇ CSV</button></div>
+        <div class="tw" id="zoneRankTbl"></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">Zone — Loss Value</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartZoneRankLoss"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Zone — AWB Count (FWD+RTO Stacked)</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartZoneRankAWB"></canvas></div></div>
+      </div>
+
+      <!-- ③ REGIONAL HEAD -->
+      <div class="sh green">③ Regional Head — FWD · RTO · Contribution (Always Pinned)</div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Regional Head Ranking</div><div class="cs">Pinned metrics always visible</div></div><button class="dl" onclick="dlCSV(rankCSV('Regional Head'),'rh_rank.csv')">⬇ CSV</button></div>
+        <div class="tw" id="rhRankTbl"></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">Regional Head — Loss</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartRHLoss"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Regional Head — AWBs</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartRHAWB"></canvas></div></div>
+      </div>
+
+      <!-- ④ CLUSTER — Worst -->
+      <div class="sh" style="border-color:var(--red)">④ Top 10 Cluster Heads — HIGHEST Loss (Worst)</div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">🔴 Worst Cluster Heads</div><div class="cs">Highest loss value · all zones</div></div><button class="dl" onclick="dlCSV(rankCSV('Cluster Head'),'ch_rank.csv')">⬇ CSV</button></div><div class="tw" id="chWorstTbl"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Worst Clusters — Loss Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartCHWorst"></canvas></div></div>
+      </div>
+
+      <!-- ⑤ CLUSTER — Best -->
+      <div class="sh green">⑤ Top 10 Cluster Heads — LOWEST Loss (Best)</div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">🟢 Best Cluster Heads</div><div class="cs">Least loss · all zones</div></div></div><div class="tw" id="chBestTbl"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Best Clusters — Loss Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartCHBest"></canvas></div></div>
+      </div>
+
+      <!-- ⑥ LOCATION — Worst -->
+      <div class="sh" style="border-color:var(--red)">⑥ Top 10 Locations — HIGHEST Loss</div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">🔴 Worst Locations</div></div><button class="dl" onclick="dlCSV(rankCSV('location'),'loc_rank.csv')">⬇ CSV</button></div><div class="tw" id="locWorstTbl"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Worst Locations — Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartLocWorst"></canvas></div></div>
+      </div>
+
+      <!-- ⑦ LOCATION — Best -->
+      <div class="sh green">⑦ Top 10 Locations — LOWEST Loss (Best Performers)</div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">🟢 Best Locations</div></div></div><div class="tw" id="locBestTbl"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Best Locations — Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartLocBest"></canvas></div></div>
+      </div>
+
+      <!-- ⑧ ALL LOCATIONS -->
+      <div class="sh yellow">⑧ All Locations — Full Ranking with % Contribution</div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">All Locations — Complete Ranking</div><div class="cs">Zone · Cluster · FWD · RTO · % of total</div></div><button class="dl" onclick="dlCSV(rankCSV('location'),'all_locations.csv')">⬇ CSV</button></div>
+        <div class="tw" id="allLocTbl"></div>
+      </div>
+
+      <!-- ⑨ ZONE full ranking -->
+      <div class="sh yellow">⑨ Zone wise — Full Contribution Ranking</div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Zone Contribution Ranking</div></div><button class="dl" onclick="dlCSV(rankCSV('Zone'),'zone_contrib.csv')">⬇ CSV</button></div>
+        <div class="tw" id="zoneContribTbl"></div>
+      </div>
+
+      <!-- ⑩ RH full ranking -->
+      <div class="sh yellow">⑩ Regional Head — Full Contribution Ranking</div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Regional Head Contribution Ranking</div></div><button class="dl" onclick="dlCSV(rankCSV('Regional Head'),'rh_contrib.csv')">⬇ CSV</button></div>
+        <div class="tw" id="rhContribTbl"></div>
+      </div>
+
+      <!-- ⑪ HEATMAP -->
+      <div class="sh blue">⑪ Cluster Head × Reason L1 Heatmap</div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">AWB Count per Cluster per Reason</div></div></div>
+        <div class="tw" id="chHeatmap"></div>
+      </div>
+    </div>
+
+    <!-- ═══ RCA ═══ -->
+    <div class="panel" id="panel-rca">
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><div><div class="ct">🔍 Search & Update RCA</div><div class="cs">Enter AWB to find shipment and add RCA remarks</div></div></div>
+        <div class="frow" style="margin-bottom:0">
+          <div class="fg" style="flex:3"><div class="flabel">AWB / Consolidation AWB</div><input class="finput" id="rcaSearch" placeholder="Enter AWB number..." onkeydown="if(event.key==='Enter')searchRCA()"/></div>
+          <button class="fbtn" onclick="searchRCA()" style="margin-top:auto">🔍 Search</button>
+        </div>
+        <div id="rcaResult" style="margin-top:14px"></div>
+      </div>
+      <div class="card" style="margin-bottom:18px">
+        <div class="ch"><div><div class="ct">📋 Recent RCA Updates</div><div class="cs">Last 20 submitted</div></div></div>
+        <div class="tw"><table class="dt"><thead><tr><th>AWB</th><th>Location</th><th>Loss ₹</th><th>Reason L1</th><th>RCA Remarks</th><th>Updated By</th><th>Time</th></tr></thead><tbody id="rcaHistory"></tbody></table></div>
+      </div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Pending RCA — My Area</div><div class="cs">Shipments without RCA</div></div><button class="dl" onclick="dlCSV(pendingRCAData(),'pending_rca.csv')">⬇ CSV</button></div>
+        <div class="tw"><table class="dt"><thead><tr><th>AWB</th><th>Date</th><th>Location</th><th>Cluster</th><th>Loss ₹</th><th>Reason L1</th><th>Type</th><th>Action</th></tr></thead><tbody id="pendingBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ═══ PERFORMANCE ═══ -->
+    <div class="panel" id="panel-performance">
+      <div class="fbar">
+        <div class="fbar-title">🔽 Performance Period</div>
+        <div class="frow">
+          <div class="fg"><div class="flabel">Month</div><select class="fsel" id="pMonth" onchange="renderPerf()"><option value="">All Months</option></select></div>
+        </div>
+      </div>
+      <div class="kpi-grid" id="perfKPI"></div>
+      <div class="g21">
+        <div class="card"><div class="ch"><div><div class="ct">My Month-wise Loss Trend</div></div></div><div class="chart-wrap" style="height:240px"><canvas id="chartMyTrend"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">RCA Completion</div></div></div><div id="rcaProgBars" style="display:flex;flex-direction:column;gap:8px;padding:8px 0"></div></div>
+      </div>
+      <div class="full card">
+        <div class="ch"><div><div class="ct">My Loss Log</div></div><button class="dl" onclick="dlCSV(myData(),'my_loss.csv')">⬇ CSV</button></div>
+        <div class="tw"><table class="dt"><thead><tr><th>AWB</th><th>Date</th><th>Location</th><th>Type</th><th>Reason L1</th><th>Loss ₹</th><th>RCA</th></tr></thead><tbody id="myLogBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ═══ ADMIN ═══ -->
+    <div class="panel" id="panel-admin">
+      <div class="full card" style="margin-bottom:18px">
+        <div class="ch"><div><div class="ct">⚙️ User Management</div><div class="cs">All system users</div></div><button class="dl" onclick="dlCSV(USERS.map(u=>({email:u.email,mobile:u.mobile,role:u.role,limit:u.limit})),'users.csv')">⬇ Export</button></div>
+        <div class="tw"><table class="dt"><thead><tr><th>Email</th><th>Mobile</th><th>Role</th><th>Limit</th><th>Status</th></tr></thead><tbody id="userTbody"></tbody></table></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div><div class="ct">Global KPIs — All Data</div><div class="cs">Unfiltered</div></div></div><div class="kpi-grid" id="adminKPI" style="grid-template-columns:1fr 1fr;gap:10px;margin:0"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Data Health</div></div></div><div id="dataHealth" style="display:flex;flex-direction:column;gap:8px"></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ DATA UPLOAD ═══ -->
+    <div class="panel" id="panel-data">
+      <!-- HOW-TO -->
+      <div class="card" style="margin-bottom:18px;border-color:rgba(59,130,246,.3);background:linear-gradient(135deg,rgba(59,130,246,.05),rgba(16,185,129,.03))">
+        <div class="ct" style="margin-bottom:12px;color:var(--blue)">📋 How to Upload Your Files</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+          <div class="rca-box" style="padding:12px"><div style="font-size:1.3rem;margin-bottom:6px">1️⃣</div><div style="font-size:.78rem;font-weight:700">Open in Chrome/Edge on your PC</div></div>
+          <div class="rca-box" style="padding:12px"><div style="font-size:1.3rem;margin-bottom:6px">2️⃣</div><div style="font-size:.78rem;font-weight:700">Click upload box or drag & drop file</div></div>
+          <div class="rca-box" style="padding:12px"><div style="font-size:1.3rem;margin-bottom:6px">3️⃣</div><div style="font-size:.78rem;font-weight:700">Select Loss.xlsx from Desktop\loss_data</div></div>
+          <div class="rca-box" style="padding:12px"><div style="font-size:1.3rem;margin-bottom:6px">4️⃣</div><div style="font-size:.78rem;font-weight:700">Dashboard auto-opens with your data</div></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <!-- LOSS FILE -->
+        <div class="card">
+          <div class="ch"><div><div class="ct">📊 Upload Loss.xlsx</div><div class="cs">Desktop\loss_data\Loss.xlsx</div></div></div>
+          <div class="dropzone" id="lossDZ" onclick="document.getElementById('lossFile').click()"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="event.preventDefault();this.classList.remove('drag');handleDrop(event,'loss')">
+            <div class="dz-icon">📂</div>
+            <div class="dz-title">Click or Drag & Drop</div>
+            <div class="dz-sub">Loss.xlsx · Loss.csv · Loss.xls</div>
+          </div>
+          <input type="file" id="lossFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="uploadLoss(this)"/>
+          <div class="pbar-wrap" id="lossPBar"><div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--t2);margin-bottom:5px"><span id="lossPLabel">Processing…</span><span id="lossPPct">0%</span></div><div class="pbar-bg"><div class="pbar-fill" id="lossPFill"></div></div></div>
+          <div class="status-msg" id="lossStatus"></div>
+          <div style="margin-top:12px;padding:10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:.58rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px">Expected Columns</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px" id="expectedCols"></div>
+          </div>
+        </div>
+
+        <!-- USERS FILE -->
+        <div class="card">
+          <div class="ch"><div><div class="ct">👥 Upload Users.xlsx</div><div class="cs">Desktop\loss_data\users.xlsx</div></div></div>
+          <div class="dropzone" id="usersDZ" onclick="document.getElementById('usersFile').click()"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="event.preventDefault();this.classList.remove('drag');handleDrop(event,'users')">
+            <div class="dz-icon">👤</div>
+            <div class="dz-title">Click or Drag & Drop</div>
+            <div class="dz-sub">users.xlsx · users.csv</div>
+          </div>
+          <input type="file" id="usersFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="uploadUsers(this)"/>
+          <div class="status-msg" id="usersStatus"></div>
+          <div style="margin-top:12px;padding:10px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+            <div style="font-size:.58rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px">User File Columns</div>
+            <div style="font-size:.72rem;color:var(--t2);line-height:1.9">
+              <span style="color:var(--blue);font-family:var(--mono)">email_id</span> · 
+              <span style="color:var(--blue);font-family:var(--mono)">mobile</span> · 
+              <span style="color:var(--blue);font-family:var(--mono)">user</span> · 
+              <span style="color:var(--blue);font-family:var(--mono)">limit</span> · 
+              <span style="color:var(--blue);font-family:var(--mono)">password</span><br/>
+              Role logic: "Regional Head" / "Manager" = Admin · Others = User
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATASET PREVIEW -->
+      <div class="full card">
+        <div class="ch"><div><div class="ct">Current Dataset</div><div class="cs" id="datasetSub">No data loaded yet</div></div><button class="dl" onclick="dlCSV(ALL_DATA.slice(0,1000),'preview.csv')">⬇ Export 1000 rows</button></div>
+        <div id="datasetInfo"></div>
+        <div id="colsDetected" style="display:none;margin-top:14px">
+          <div style="font-size:.58rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px">Columns detected in uploaded file</div>
+          <div id="colsList" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+        </div>
+        <div id="previewSection" style="display:none;margin-top:16px">
+          <div style="font-size:.58rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px">First 10 rows preview</div>
+          <div class="tw" id="previewTbl"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════
+const IDB_NAME='lossiq_v3', IDB_STORE='kv', IDB_VER=1;
+const K_LOSS='loss', K_USERS='users', K_RCA='rca';
+let ALL_DATA=[], FILTERED_DATA=[], RCA_DATA={}, currentUser=null, _charts={};
+
+// Built-in users (never wiped)
+let USERS=[
+  {email:'superadmin@lossiq.com',mobile:'9999999999',role:'super',limit:'Super Admin',zone:'All',password:'Admin@2026'},
+  {email:'admin1@lossiq.com',   mobile:'9876543210',role:'admin',limit:'Regional Head',zone:'All',password:'Admin@2026'},
+  {email:'user1@lossiq.com',    mobile:'9000000001',role:'user', limit:'Area Manager',zone:'All',password:'User@0001'}
+];
+
+const COLS=['actual_lost_date','current_movement_type','awb','consolidation_awb',
+  'loss_percentage','shipment_value','loss_value','location','leg',
+  'reason','reason_l1','attribution_changed','credit_location',
+  'Cluster Head','Zone','Regional Head'];
+
+// ═══════════════════════════════════════════════
+// INDEXEDDB
+// ═══════════════════════════════════════════════
+let _idb=null;
+function openIDB(){
+  if(_idb)return Promise.resolve(_idb);
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(IDB_NAME,IDB_VER);
+    r.onupgradeneeded=e=>e.target.result.createObjectStore(IDB_STORE);
+    r.onsuccess=e=>{_idb=e.target.result;res(_idb)};
+    r.onerror=()=>rej(r.error);
+  });
+}
+function idbPut(key,val){return openIDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(val,key);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error);}));}
+function idbGet(key){return openIDB().then(db=>new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readonly');const r=tx.objectStore(IDB_STORE).get(key);r.onsuccess=()=>res(r.result??null);r.onerror=()=>rej(r.error);}));}
+
+function compress(rows){
+  return rows.map(r=>[
+    r.actual_lost_date,r.current_movement_type,r.awb,r.consolidation_awb,
+    r.loss_percentage,r.shipment_value,r.loss_value,r.location,r.leg,
+    r.reason,r.reason_l1,r.attribution_changed,r.credit_location,
+    r['Cluster Head'],r.Zone,r['Regional Head'],r._month,r._rca||''
+  ]);
+}
+function expand(arr){
+  return arr.map(r=>({
+    actual_lost_date:S(r[0]),current_movement_type:S(r[1]),awb:S(r[2]),consolidation_awb:S(r[3]),
+    loss_percentage:+r[4]||0,shipment_value:+r[5]||0,loss_value:+r[6]||0,location:S(r[7]),
+    leg:S(r[8]),reason:S(r[9]),reason_l1:S(r[10]),attribution_changed:S(r[11]),
+    credit_location:S(r[12]),'Cluster Head':S(r[13]),Zone:S(r[14]),'Regional Head':S(r[15]),
+    _month:S(r[16])||'Unknown',_rca:S(r[17])
+  }));
+}
+async function saveLoss(){try{await idbPut(K_LOSS,compress(ALL_DATA));toast('✓ Saved','var(--green)');}catch(e){toast('Storage error','var(--red)');}}
+async function loadLoss(){try{const d=await idbGet(K_LOSS);if(d&&d.length){ALL_DATA=expand(d);FILTERED_DATA=[...ALL_DATA];}}catch(e){}}
+async function saveRCA(){try{await idbPut(K_RCA,RCA_DATA);}catch(e){}}
+async function loadRCA(){try{const d=await idbGet(K_RCA);if(d)RCA_DATA=d;}catch(e){}}
+async function saveUsers(){try{await idbPut(K_USERS,USERS);}catch(e){}}
+async function loadUsers(){try{const d=await idbGet(K_USERS);if(d&&d.length){const builtIn=USERS.filter(u=>u.mobile==='9999999999');const loaded=d.filter(u=>u.mobile!=='9999999999');USERS=[...builtIn,...loaded];}}catch(e){}}
+
+// ═══════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════
+const S=v=>String(v||'').trim();
+const N=v=>typeof v==='number'?v:+S(v).replace(/[^0-9.\-]/g,'')||0;
+const INR=v=>{const n=Math.round(+v||0);if(n>=1e7)return '₹'+(n/1e7).toFixed(1)+'Cr';if(n>=1e5)return '₹'+(n/1e5).toFixed(1)+'L';return '₹'+n.toLocaleString('en-IN');};
+const NUM=v=>Math.round(+v||0).toLocaleString('en-IN');
+const uniq=arr=>[...new Set(arr.map(S))].filter(Boolean).sort();
+const isFwd=r=>/forward/i.test(r.current_movement_type);
+const isRTO=r=>/rto/i.test(r.current_movement_type);
+
+function toast(msg,bg='var(--green)'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.background=bg;t.style.color='#fff';
+  t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',3000);
+}
+function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=html;}
+function gv(id){const e=document.getElementById(id);return e?e.value:'';}
+
+// ═══════════════════════════════════════════════
+// DATE PARSING
+// ═══════════════════════════════════════════════
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtMonth(d){return MONTHS[d.getMonth()]+'-'+d.getFullYear();}
+function parseMonth(raw){
+  if(!raw)return 'Unknown';
+  const s=S(raw);
+  // Excel serial
+  if(/^\d{4,5}$/.test(s)){const d=new Date(Math.round((+s-25569)*864e5));if(!isNaN(d))return fmtMonth(d);}
+  // DD-MM-YYYY or DD/MM/YYYY
+  let m=s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if(m){const d=new Date(`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`);if(!isNaN(d))return fmtMonth(d);}
+  // YYYY-MM-DD
+  m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(m){const d=new Date(`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`);if(!isNaN(d))return fmtMonth(d);}
+  // Natural text
+  const d=new Date(s);if(!isNaN(d))return fmtMonth(d);
+  return 'Unknown';
+}
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function toggleLoginType(){
+  const t=gv('ltype');
+  document.getElementById('lid-label').textContent=t==='mobile'?'Mobile Number':'Email ID';
+  const inp=document.getElementById('lid');
+  inp.type=t==='mobile'?'tel':'email';
+  inp.maxLength=t==='mobile'?10:100;
+  inp.placeholder=t==='mobile'?'10-digit mobile':'Your email ID';
+}
+
+function doLogin(){
+  const t=gv('ltype'), id=S(gv('lid')), pwd=S(gv('lpwd'));
+  const err=document.getElementById('lerr');err.style.display='none';
+  if(!id||!pwd){err.textContent='Please enter credentials.';err.style.display='block';return;}
+  const u=USERS.find(u=>t==='mobile'?u.mobile===id:u.email===id);
+  if(!u||u.password!==pwd){err.textContent='Invalid credentials. Please try again.';err.style.display='block';return;}
+  currentUser=u;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  // set ui
+  setEl('uavatar',u.email.substring(0,2).toUpperCase());
+  setEl('uname',u.email);
+  setEl('urole',u.role==='super'?'Super Admin':u.role==='admin'?'Admin':'User');
+  // show admin tabs
+  const isAdmin=(u.role==='super'||u.role==='admin');
+  document.querySelectorAll('.admin-tab').forEach(t=>t.style.display=isAdmin?'flex':'none');
+  initApp();
+}
+
+function doLogout(){
+  currentUser=null;ALL_DATA=[];FILTERED_DATA=[];
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('lid').value='';document.getElementById('lpwd').value='';
+}
+
+function openPwdModal(){
+  document.getElementById('pwdOld').value='';
+  document.getElementById('pwdNew').value='';
+  document.getElementById('pwdConfirm').value='';
+  const e=document.getElementById('pwdErr');e.style.display='none';
+  document.getElementById('pwdModal').classList.add('show');
+}
+function closePwdModal(){document.getElementById('pwdModal').classList.remove('show');}
+
+function changePassword(){
+  const oldP=S(gv('pwdOld')), newP=S(gv('pwdNew')), conf=S(gv('pwdConfirm'));
+  const err=document.getElementById('pwdErr');
+  err.style.display='none';
+  if(!oldP||!newP||!conf){err.textContent='All fields required.';err.style.display='block';return;}
+  if(oldP!==currentUser.password){err.textContent='Current password is wrong.';err.style.display='block';return;}
+  if(newP.length<6){err.textContent='New password must be at least 6 characters.';err.style.display='block';return;}
+  if(newP!==conf){err.textContent='Passwords do not match.';err.style.display='block';return;}
+  const idx=USERS.findIndex(u=>u.mobile===currentUser.mobile);
+  if(idx>=0){USERS[idx].password=newP;currentUser.password=newP;}
+  saveUsers();
+  closePwdModal();
+  toast('✓ Password changed successfully','var(--green)');
+}
+
+// ═══════════════════════════════════════════════
+// FILTER POPULATION
+// ═══════════════════════════════════════════════
+function fillSel(id,opts,placeholder){
+  const el=document.getElementById(id);if(!el)return;
+  const cur=el.value;
+  el.innerHTML=`<option value="">${placeholder}</option>`+opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  if(opts.includes(cur))el.value=cur;
+}
+
+function populateFilters(){
+  const months=uniq(ALL_DATA.map(r=>r._month)).filter(m=>m!=='Unknown');
+  const zones=uniq(ALL_DATA.map(r=>r.Zone));
+  const rhs=uniq(ALL_DATA.map(r=>r['Regional Head']));
+  const chs=uniq(ALL_DATA.map(r=>r['Cluster Head']));
+  const locs=uniq(ALL_DATA.map(r=>r.location));
+  const r1s=uniq(ALL_DATA.map(r=>r.reason_l1));
+  // Dashboard
+  fillSel('fMonth',months,'All Months');fillSel('fZone',zones,'All Zones');
+  fillSel('fRH',rhs,'All');fillSel('fCH',chs,'All');
+  fillSel('fLoc',locs,'All');fillSel('fR1',r1s,'All Reasons');
+  // Summary
+  fillSel('sMonth',months,'All Months');fillSel('sZone',zones,'All Zones');
+  fillSel('sR1',r1s,'All');fillSel('sLoc',locs,'All');
+  // Ranking
+  fillSel('rMonth',months,'All Months');fillSel('rZone',zones,'All Zones');
+  fillSel('rRH',rhs,'All');fillSel('rCH',chs,'All');
+  // Performance
+  fillSel('pMonth',months,'All Months');
+}
+
+// ═══════════════════════════════════════════════
+// CHART HELPERS
+// ═══════════════════════════════════════════════
+const PALETTE=['#e8423a','#3b82f6','#f97316','#10b981','#fbbf24','#8b5cf6','#06b6d4','#ec4899','#14b8a6','#84cc16'];
+const CT={color:'#7e9ab8',font:{size:10,family:'Nunito Sans'}};
+const CG='rgba(30,48,80,.4)';
+
+function mkChart(id,cfg){
+  if(_charts[id]){try{_charts[id].destroy();}catch(e){}}
+  const el=document.getElementById(id);if(!el)return;
+  _charts[id]=new Chart(el,cfg);
+}
+
+function barCfg(labels,datasets,opts={}){
+  return{type:'bar',data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#eef2ff',font:{size:11,family:'Nunito Sans'}}},
+      tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8'}},
+    scales:{
+      x:{ticks:CT,grid:{color:CG},...(opts.x||{})},
+      y:{ticks:{...CT,callback:v=>opts.inr?INR(v):NUM(v)},grid:{color:CG},...(opts.y||{})},
+      ...(opts.y1?{y1:{position:'right',ticks:{...CT,color:'#3b82f6'},grid:{drawOnChartArea:false}}}:{})
+    },
+    ...(opts.extra||{})
+  }};
+}
+
+function hBarCfg(labels,datasets,opts={}){
+  const c=barCfg(labels,datasets,opts);
+  c.options.indexAxis='y';
+  return c;
+}
+
+function exportChart(id){const c=_charts[id];if(!c)return;const a=document.createElement('a');a.href=c.toBase64Image();a.download=id+'.png';a.click();}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+function applyFilters(){
+  FILTERED_DATA=ALL_DATA.filter(r=>{
+    if(gv('fMonth')&&r._month!==gv('fMonth'))return false;
+    if(gv('fZone')&&r.Zone!==gv('fZone'))return false;
+    if(gv('fRH')&&r['Regional Head']!==gv('fRH'))return false;
+    if(gv('fCH')&&r['Cluster Head']!==gv('fCH'))return false;
+    if(gv('fLoc')&&r.location!==gv('fLoc'))return false;
+    if(gv('fR1')&&r.reason_l1!==gv('fR1'))return false;
+    if(gv('fMov')){
+      const mv=gv('fMov').toLowerCase();
+      if(mv==='forward'&&!isFwd(r))return false;
+      if(mv==='rto'&&!isRTO(r))return false;
+    }
+    return true;
+  });
+  renderDashboard();
+}
+
+function resetFilters(){
+  ['fMonth','fZone','fRH','fCH','fLoc','fMov','fR1'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  applyFilters();
+}
+
+function renderDashboard(){
+  const d=FILTERED_DATA;
+  if(!d.length){setEl('dashKPI','<div style="color:var(--t2);padding:20px">No data loaded. Go to Data Upload tab to upload Loss.xlsx.</div>');return;}
+  const totalLoss=d.reduce((s,r)=>s+r.loss_value,0);
+  const totalSV=d.reduce((s,r)=>s+r.shipment_value,0);
+  const n=d.length, avg=n?totalLoss/n:0;
+  const locs=uniq(d.map(r=>r.location)).length;
+  const fwdD=d.filter(isFwd), rtoD=d.filter(isRTO);
+  const fwdL=fwdD.reduce((s,r)=>s+r.loss_value,0), rtoL=rtoD.reduce((s,r)=>s+r.loss_value,0);
+  const lossPct=totalSV?+(totalLoss/totalSV*100).toFixed(2):0;
+
+  // KPIs
+  setEl('dashKPI',`
+    <div class="kpi red"><div class="klabel">Total Loss Value</div><div class="kval red">${INR(totalLoss)}</div><div class="ksub">Across ${n} shipments</div></div>
+    <div class="kpi blue"><div class="klabel">Total AWBs</div><div class="kval blue">${NUM(n)}</div><div class="ksub">${uniq(d.map(r=>r._month)).length} months</div></div>
+    <div class="kpi orange"><div class="klabel">Avg Loss / AWB</div><div class="kval orange">${INR(avg)}</div><div class="ksub">Per shipment</div></div>
+    <div class="kpi green"><div class="klabel">Shipment Value</div><div class="kval green">${INR(totalSV)}</div><div class="ksub">Total declared</div></div>
+    <div class="kpi yellow"><div class="klabel">Loss %</div><div class="kval yellow">${lossPct}%</div><div class="ksub">Of shipment value</div></div>
+    <div class="kpi purple"><div class="klabel">Locations</div><div class="kval" style="color:var(--purple)">${NUM(locs)}</div><div class="ksub">${uniq(d.map(r=>r.Zone)).length} zones</div></div>
+  `);
+
+  // FWD / RTO cards
+  const mkTypeCard=(label,arr,colorVar,badge)=>{
+    const l=arr.reduce((s,r)=>s+r.loss_value,0), sv=arr.reduce((s,r)=>s+r.shipment_value,0);
+    const pct=totalLoss?+(l/totalLoss*100).toFixed(1):0;
+    const lc=uniq(arr.map(r=>r.location)).length;
+    return`<div class="card">
+      <div class="ch"><div><div class="ct">${label}</div></div><span class="badge ${badge}">${badge.toUpperCase()}</span></div>
+      <div class="mprow">
+        <div class="mp"><div class="mplabel">Total AWBs</div><div class="mpval blue">${NUM(arr.length)}</div></div>
+        <div class="mp"><div class="mplabel">Loss Value</div><div class="mpval red">${INR(l)}</div></div>
+        <div class="mp"><div class="mplabel">Avg Loss</div><div class="mpval orange">${INR(Math.round(l/(arr.length||1)))}</div></div>
+        <div class="mp"><div class="mplabel">Locations</div><div class="mpval yellow">${NUM(lc)}</div></div>
+        <div class="mp"><div class="mplabel">Ship. Value</div><div class="mpval green">${INR(sv)}</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--t2);margin-top:6px;margin-bottom:4px">
+        <span>Contribution of total loss</span><span style="font-weight:800;color:${colorVar}">${pct}%</span>
+      </div>
+      <div class="ptbar"><div class="ptfill" style="width:${pct}%;background:${colorVar}"></div></div>
+    </div>`;
+  };
+  setEl('fwdRtoCards',mkTypeCard('Forward Losses',fwdD,'var(--blue)','fwd')+mkTypeCard('RTO Losses',rtoD,'var(--orange)','rto'));
+
+  // Month trend
+  const monthMap={};
+  d.forEach(r=>{if(!monthMap[r._month])monthMap[r._month]={loss:0,n:0};monthMap[r._month].loss+=r.loss_value;monthMap[r._month].n++;});
+  const sortedMonths=Object.keys(monthMap).filter(m=>m!=='Unknown').sort((a,b)=>{
+    const pa=a.split('-'),pb=b.split('-');
+    const ya=+pa[1]||0,yb=+pb[1]||0;
+    const ma=MONTHS.indexOf(pa[0]),mb=MONTHS.indexOf(pb[0]);
+    return ya!==yb?ya-yb:ma-mb;
+  });
+  mkChart('chartMonth',{
+    type:'bar',data:{labels:sortedMonths,datasets:[
+      {label:'Loss ₹',data:sortedMonths.map(m=>Math.round(monthMap[m].loss)),backgroundColor:'rgba(232,66,58,.7)',borderColor:'var(--red)',borderWidth:1,yAxisID:'y'},
+      {label:'AWBs',data:sortedMonths.map(m=>monthMap[m].n),type:'line',borderColor:'var(--blue)',backgroundColor:'rgba(59,130,246,.1)',pointBackgroundColor:'var(--blue)',tension:.3,yAxisID:'y1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#eef2ff',font:{size:11}}},tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8'}},
+      scales:{
+        x:{ticks:CT,grid:{color:CG}},
+        y:{ticks:{...CT,callback:v=>INR(v)},grid:{color:CG}},
+        y1:{position:'right',ticks:{...CT,color:'var(--blue)'},grid:{drawOnChartArea:false}}
+      }}
+  });
+
+  // Movement split
+  mkChart('chartMov',{type:'doughnut',data:{
+    labels:['Forward','RTO','Other'],
+    datasets:[{data:[Math.round(fwdL),Math.round(rtoL),Math.round(totalLoss-fwdL-rtoL)],
+      backgroundColor:['rgba(59,130,246,.8)','rgba(249,115,22,.8)','rgba(100,116,139,.5)'],
+      borderColor:['var(--blue)','var(--orange)','#475569'],borderWidth:1}]
+  },options:{responsive:true,maintainAspectRatio:false,cutout:'55%',
+    plugins:{legend:{position:'bottom',labels:{color:'#eef2ff',font:{size:11}}},
+      tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8',callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${INR(ctx.raw)} (${t?+(ctx.raw/t*100).toFixed(1):0}%)`;}}}}
+  }});
+
+  // Reason L1
+  const r1map={};
+  d.forEach(r=>{if(!r1map[r.reason_l1])r1map[r.reason_l1]={n:0,loss:0};r1map[r.reason_l1].n++;r1map[r.reason_l1].loss+=r.loss_value;});
+  const r1keys=Object.keys(r1map).filter(Boolean).sort((a,b)=>r1map[b].loss-r1map[a].loss).slice(0,8);
+  mkChart('chartReason',hBarCfg(r1keys,[
+    {label:'Loss ₹',data:r1keys.map(k=>Math.round(r1map[k].loss)),backgroundColor:PALETTE,yAxisID:'y'},
+    {label:'AWBs',data:r1keys.map(k=>r1map[k].n),type:'line',borderColor:'#fbbf24',pointBackgroundColor:'#fbbf24',tension:.3,yAxisID:'y1'}
+  ],{inr:true,y1:{position:'right',ticks:{...CT,color:'#fbbf24'},grid:{drawOnChartArea:false}}}));
+
+  // Leg
+  const legMap={};d.forEach(r=>{if(!legMap[r.leg])legMap[r.leg]=0;legMap[r.leg]+=r.loss_value;});
+  const legKeys=Object.keys(legMap).filter(Boolean);
+  mkChart('chartLeg',{type:'pie',data:{labels:legKeys,datasets:[{data:legKeys.map(k=>Math.round(legMap[k])),backgroundColor:PALETTE,borderColor:'var(--bg)',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#eef2ff',font:{size:11}}},tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8',callbacks:{label:ctx=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);return ` ${ctx.label}: ${INR(ctx.raw)} (${t?+(ctx.raw/t*100).toFixed(1):0}%)`;}}}}}}
+  );
+
+  // Zone trend (multi-line)
+  const zones=uniq(d.map(r=>r.Zone));
+  const zMonthMap={};
+  zones.forEach(z=>{zMonthMap[z]={};sortedMonths.forEach(m=>{zMonthMap[z][m]=0;});});
+  d.forEach(r=>{if(zMonthMap[r.Zone])zMonthMap[r.Zone][r._month]=(zMonthMap[r.Zone][r._month]||0)+r.loss_value;});
+  mkChart('chartZone',{type:'line',data:{labels:sortedMonths,datasets:zones.slice(0,8).map((z,i)=>({
+    label:z,data:sortedMonths.map(m=>Math.round(zMonthMap[z][m]||0)),
+    borderColor:PALETTE[i%PALETTE.length],backgroundColor:'transparent',tension:.3,pointRadius:4
+  }))},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#eef2ff',font:{size:11}}},tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8'}},
+    scales:{x:{ticks:CT,grid:{color:CG}},y:{ticks:{...CT,callback:v=>INR(v)},grid:{color:CG}}}
+  }});
+
+  // Top 10 locations
+  const locMap={};
+  d.forEach(r=>{
+    if(!locMap[r.location])locMap[r.location]={n:0,loss:0,fwd:0,rto:0,ch:r['Cluster Head'],zone:r.Zone};
+    locMap[r.location].n++;locMap[r.location].loss+=r.loss_value;
+    if(isFwd(r))locMap[r.location].fwd++;else locMap[r.location].rto++;
+  });
+  const topLocs=Object.entries(locMap).sort((a,b)=>b[1].loss-a[1].loss).slice(0,10);
+  setEl('topLocBody',topLocs.map(([loc,v],i)=>`<tr>
+    <td><span class="medal ${i===0?'m1':i===1?'m2':i===2?'m3':'mn'}">${i+1}</span></td>
+    <td><b>${loc}</b></td><td class="t2">${v.ch}</td><td class="t2">${v.zone}</td>
+    <td class="mono vblue">${NUM(v.n)}</td>
+    <td class="mono vred">${INR(v.loss)}</td>
+    <td class="mono vorange">${INR(Math.round(v.loss/v.n))}</td>
+    <td><span class="badge fwd">${v.fwd}</span></td>
+    <td><span class="badge rto">${v.rto}</span></td>
+  </tr>`).join(''));
+}
+
+function topLocCSV(){
+  const d=FILTERED_DATA, locMap={};
+  d.forEach(r=>{if(!locMap[r.location])locMap[r.location]={n:0,loss:0,fwd:0,rto:0};locMap[r.location].n++;locMap[r.location].loss+=r.loss_value;if(isFwd(r))locMap[r.location].fwd++;else locMap[r.location].rto++;});
+  return Object.entries(locMap).sort((a,b)=>b[1].loss-a[1].loss).map(([l,v])=>({Location:l,AWBs:v.n,Loss:Math.round(v.loss),FWD:v.fwd,RTO:v.rto}));
+}
+</script>
+<script>
+// ═══════════════════════════════════════════════
+// SUMMARY TAB
+// ═══════════════════════════════════════════════
+function getSummData(){
+  return ALL_DATA.filter(r=>{
+    if(gv('sMonth')&&r._month!==gv('sMonth'))return false;
+    if(gv('sZone')&&r.Zone!==gv('sZone'))return false;
+    if(gv('sMov')){const mv=gv('sMov').toLowerCase();if(mv==='forward'&&!isFwd(r))return false;if(mv==='rto'&&!isRTO(r))return false;}
+    if(gv('sR1')&&r.reason_l1!==gv('sR1'))return false;
+    if(gv('sLoc')&&r.location!==gv('sLoc'))return false;
+    return true;
+  });
+}
+
+function renderSummary(){
+  const d=getSummData();
+  const grandLoss=d.reduce((s,r)=>s+r.loss_value,0)||1;
+  const grandSV=d.reduce((s,r)=>s+r.shipment_value,0);
+  const n=d.length, avg=n?grandLoss/n:0;
+  const locs=uniq(d.map(r=>r.location)).length;
+  const fwdD=d.filter(isFwd), rtoD=d.filter(isRTO);
+
+  setEl('summKPI',`
+    <div class="kpi red"><div class="klabel">Total Loss</div><div class="kval red">${INR(grandLoss)}</div></div>
+    <div class="kpi blue"><div class="klabel">Total AWBs</div><div class="kval blue">${NUM(n)}</div></div>
+    <div class="kpi orange"><div class="klabel">Avg Loss/AWB</div><div class="kval orange">${INR(Math.round(avg))}</div></div>
+    <div class="kpi green"><div class="klabel">Shipment Value</div><div class="kval green">${INR(grandSV)}</div></div>
+    <div class="kpi yellow"><div class="klabel">Locations</div><div class="kval yellow">${NUM(locs)}</div></div>
+  `);
+
+  const typeBlock=(arr,badge)=>{
+    const l=arr.reduce((s,r)=>s+r.loss_value,0), sv=arr.reduce((s,r)=>s+r.shipment_value,0);
+    const pct=grandLoss?+(l/grandLoss*100).toFixed(1):0;
+    const lc=uniq(arr.map(r=>r.location)).length;
+    const isFwdType=badge==='fwd';
+    return`<div class="mprow">
+      <div class="mp"><div class="mplabel">Total AWBs</div><div class="mpval blue">${NUM(arr.length)}</div></div>
+      <div class="mp"><div class="mplabel">Total Value</div><div class="mpval red">${INR(l)}</div></div>
+      <div class="mp"><div class="mplabel">Avg Loss</div><div class="mpval orange">${INR(Math.round(l/(arr.length||1)))}</div></div>
+      <div class="mp"><div class="mplabel">Locations</div><div class="mpval yellow">${NUM(lc)}</div></div>
+      <div class="mp"><div class="mplabel">Ship. Value</div><div class="mpval green">${INR(sv)}</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--t2);margin-top:4px;margin-bottom:4px"><span>% of total loss</span><span style="font-weight:800">${pct}%</span></div>
+    <div class="ptbar"><div class="ptfill" style="width:${pct}%;background:${isFwdType?'var(--blue)':'var(--orange)'}"></div></div>`;
+  };
+  setEl('fwdSumm',typeBlock(fwdD,'fwd'));
+  setEl('rtoSumm',typeBlock(rtoD,'rto'));
+
+  // Reason L1 table
+  const r1map={};
+  d.forEach(r=>{if(!r1map[r.reason_l1])r1map[r.reason_l1]={n:0,loss:0};r1map[r.reason_l1].n++;r1map[r.reason_l1].loss+=r.loss_value;});
+  const r1keys=Object.keys(r1map).filter(Boolean).sort((a,b)=>r1map[b].n-r1map[a].n);
+  setEl('summReasonTbl',r1keys.length?`<table class="dt"><thead><tr><th>#</th><th>Reason L1</th><th>AWB Count</th><th>AWB %</th><th>Loss Value ₹</th><th>Loss %</th></tr></thead><tbody>${r1keys.map((r,i)=>{
+    const ac=r1map[r].n, lv=r1map[r].loss;
+    const ap=+(ac/n*100).toFixed(1), lp=+(lv/grandLoss*100).toFixed(1);
+    return`<tr><td>${i+1}</td><td><b>${r}</b></td>
+      <td class="mono vblue">${NUM(ac)}</td>
+      <td><div class="pctbar"><div class="pctbg"><div class="pctfill" style="width:${Math.min(ap,100)}%;background:var(--blue)"></div></div><span style="font-size:.68rem;color:var(--blue)">${ap}%</span></div></td>
+      <td class="mono vred">${INR(lv)}</td>
+      <td><div class="pctbar"><div class="pctbg"><div class="pctfill" style="width:${Math.min(lp,100)}%;background:var(--red)"></div></div><span style="font-size:.68rem;color:var(--red)">${lp}%</span></div></td>
+    </tr>`;
+  }).join('')}</tbody></table>`:'<div style="color:var(--t2);padding:16px">No data</div>');
+
+  // Charts
+  mkChart('chartSummR1AWB',hBarCfg(r1keys,[{label:'AWB Count',data:r1keys.map(k=>r1map[k].n),backgroundColor:PALETTE}]));
+  mkChart('chartSummR1Val',hBarCfg(r1keys,[{label:'Loss ₹',data:r1keys.map(k=>Math.round(r1map[k].loss)),backgroundColor:PALETTE}],{inr:true}));
+
+  // Cluster x Month matrix
+  const months=uniq(d.map(r=>r._month)).filter(m=>m!=='Unknown').sort((a,b)=>{
+    const pa=a.split('-'),pb=b.split('-');return (+pa[1]-+pb[1])||MONTHS.indexOf(pa[0])-MONTHS.indexOf(pb[0]);
+  });
+  const clusterMap={};
+  d.forEach(r=>{const k=r['Cluster Head']||'Unknown';if(!clusterMap[k])clusterMap[k]={};clusterMap[k][r._month]=(clusterMap[k][r._month]||0)+r.loss_value;});
+  const sortedClusters=Object.keys(clusterMap).sort((a,b)=>{const ta=Object.values(clusterMap[a]).reduce((s,v)=>s+v,0);const tb=Object.values(clusterMap[b]).reduce((s,v)=>s+v,0);return tb-ta;});
+  setEl('clusterMonthTbl',months.length?`<table class="dt"><thead><tr><th>Cluster Head</th>${months.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>${sortedClusters.map(c=>{const t=Object.values(clusterMap[c]).reduce((s,v)=>s+v,0);return`<tr><td><b>${c}</b></td>${months.map(m=>`<td class="mono ${clusterMap[c][m]?'vred':''}"> ${clusterMap[c][m]?INR(clusterMap[c][m]):'—'}</td>`).join('')}<td class="mono vred">${INR(t)}</td></tr>`;}).join('')}</tbody></table>`:'<div style="color:var(--t2);padding:16px">No data</div>');
+}
+
+function reasonCSV(){
+  const d=getSummData(), n=d.length||1;
+  const grandLoss=d.reduce((s,r)=>s+r.loss_value,0)||1;
+  const r1map={};
+  d.forEach(r=>{if(!r1map[r.reason_l1])r1map[r.reason_l1]={n:0,loss:0};r1map[r.reason_l1].n++;r1map[r.reason_l1].loss+=r.loss_value;});
+  return Object.keys(r1map).filter(Boolean).sort((a,b)=>r1map[b].n-r1map[a].n).map(r=>({'Reason L1':r,'AWB Count':r1map[r].n,'AWB %':+(r1map[r].n/n*100).toFixed(1),'Loss Value':Math.round(r1map[r].loss),'Loss %':+(r1map[r].loss/grandLoss*100).toFixed(1)}));
+}
+function clusterMonthCSV(){
+  const d=getSummData();
+  const months=uniq(d.map(r=>r._month)).filter(m=>m!=='Unknown');
+  const clusterMap={};
+  d.forEach(r=>{const k=r['Cluster Head']||'Unknown';if(!clusterMap[k])clusterMap[k]={};clusterMap[k][r._month]=(clusterMap[k][r._month]||0)+r.loss_value;});
+  return Object.keys(clusterMap).map(c=>{const o={'Cluster Head':c};months.forEach(m=>{o[m]=Math.round(clusterMap[c][m]||0);});o.Total=Math.round(Object.values(clusterMap[c]).reduce((s,v)=>s+v,0));return o;});
+}
+
+// ═══════════════════════════════════════════════
+// RANKING TAB
+// ═══════════════════════════════════════════════
+function getRankData(){
+  return ALL_DATA.filter(r=>{
+    if(gv('rMonth')&&r._month!==gv('rMonth'))return false;
+    if(gv('rZone')&&r.Zone!==gv('rZone'))return false;
+    if(gv('rRH')&&r['Regional Head']!==gv('rRH'))return false;
+    if(gv('rCH')&&r['Cluster Head']!==gv('rCH'))return false;
+    return true;
+  });
+}
+
+function resetRanking(){
+  ['rMonth','rZone','rRH','rCH','rTop'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=id==='rTop'?'10':'';});
+  renderRanking();
+}
+
+// Build aggregated stats for any dimension key
+function buildStats(data, key){
+  const grand=data.reduce((s,r)=>s+r.loss_value,0)||1;
+  const map={};
+  data.forEach(r=>{
+    const k=r[key]||'Unknown';
+    if(!map[k])map[k]={name:k,n:0,loss:0,sv:0,fwdN:0,fwdL:0,rtoN:0,rtoL:0,locs:new Set()};
+    map[k].n++;map[k].loss+=r.loss_value;map[k].sv+=r.shipment_value;
+    map[k].locs.add(r.location);
+    if(isFwd(r)){map[k].fwdN++;map[k].fwdL+=r.loss_value;}
+    else{map[k].rtoN++;map[k].rtoL+=r.loss_value;}
+  });
+  return Object.values(map).map(v=>({...v,locs:v.locs.size,avg:v.n?v.loss/v.n:0,
+    pct:+(v.loss/grand*100).toFixed(1),
+    fwdPct:v.loss?+(v.fwdL/v.loss*100).toFixed(1):0,
+    rtoPct:v.loss?+(v.rtoL/v.loss*100).toFixed(1):0
+  })).sort((a,b)=>b.loss-a.loss);
+}
+
+// Render a ranking table (worst = high loss, best = low loss)
+function rankTbl(stats, topN, best=false){
+  const sl=best?[...stats].sort((a,b)=>a.loss-b.loss).slice(0,topN):stats.slice(0,topN);
+  if(!sl.length)return '<div style="color:var(--t2);padding:16px">No data</div>';
+  return`<table class="dt"><thead><tr>
+    <th>#</th><th>Name</th><th>Total AWBs</th><th>Loss Value ₹</th><th>Avg Loss ₹</th><th>Locations</th>
+    <th>FWD AWBs</th><th>FWD Loss ₹</th><th>FWD%</th>
+    <th>RTO AWBs</th><th>RTO Loss ₹</th><th>RTO%</th>
+    <th>% of Total</th>
+  </tr></thead><tbody>${sl.map((r,i)=>{
+    const mc=i===0?'m1':i===1?'m2':i===2?'m3':'mn';
+    return`<tr class="${best?'good-row':''}">
+      <td><span class="medal ${mc}">${i+1}</span></td>
+      <td><b>${r.name}</b></td>
+      <td class="mono vblue">${NUM(r.n)}</td>
+      <td class="mono vred">${INR(r.loss)}</td>
+      <td class="mono vorange">${INR(Math.round(r.avg))}</td>
+      <td class="mono">${NUM(r.locs)}</td>
+      <td class="mono" style="color:#60a5fa">${NUM(r.fwdN)}</td>
+      <td class="mono" style="color:#60a5fa">${INR(r.fwdL)}</td>
+      <td><span style="font-size:.68rem;color:#60a5fa;font-weight:700">${r.fwdPct}%</span></td>
+      <td class="mono vorange">${NUM(r.rtoN)}</td>
+      <td class="mono vorange">${INR(r.rtoL)}</td>
+      <td><span style="font-size:.68rem;color:var(--orange);font-weight:700">${r.rtoPct}%</span></td>
+      <td><div class="cbar"><div class="cbarfill" style="width:${Math.min(r.pct,100)}%;background:${best?'var(--green)':'var(--red)'}"> ${r.pct>=4?r.pct+'%':''}</div></div><div style="font-size:.6rem;color:var(--t3);margin-top:2px">${r.pct}%</div></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+// Full contribution table (all rows)
+function contribTbl(stats){
+  const grand=stats.reduce((s,r)=>s+r.loss,0)||1;
+  return`<table class="dt"><thead><tr>
+    <th>#</th><th>Name</th><th>AWBs</th><th>Loss ₹</th><th>Avg Loss</th><th>FWD</th><th>RTO</th><th>% Contribution</th>
+  </tr></thead><tbody>${stats.map((r,i)=>{
+    const pct=+(r.loss/grand*100).toFixed(1);
+    const mc=i===0?'m1':i===1?'m2':i===2?'m3':'mn';
+    return`<tr><td><span class="medal ${mc}">${i+1}</span></td><td><b>${r.name}</b></td>
+      <td class="mono vblue">${NUM(r.n)}</td><td class="mono vred">${INR(r.loss)}</td>
+      <td class="mono vorange">${INR(Math.round(r.avg))}</td>
+      <td class="mono" style="color:#60a5fa">${NUM(r.fwdN)}</td>
+      <td class="mono vorange">${NUM(r.rtoN)}</td>
+      <td><div class="cbar"><div class="cbarfill" style="width:${Math.min(pct,100)}%;background:var(--red)"> ${pct>=4?pct+'%':''}</div></div><div style="font-size:.6rem;color:var(--t3);margin-top:2px">${pct}%</div></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+// Bar chart helper for ranking
+function rankBarChart(canvasId, stats, topN, best, inr=true){
+  const sl=best?[...stats].sort((a,b)=>a.loss-b.loss).slice(0,topN):stats.slice(0,topN);
+  const labels=sl.map(r=>r.name);
+  mkChart(canvasId,{type:'bar',data:{labels,datasets:[
+    {label:'Loss ₹',data:sl.map(r=>Math.round(r.loss)),backgroundColor:best?'rgba(16,185,129,.7)':'rgba(232,66,58,.7)',borderColor:best?'var(--green)':'var(--red)',borderWidth:1,yAxisID:'y'},
+    {label:'AWBs',data:sl.map(r=>r.n),type:'line',borderColor:'var(--blue)',backgroundColor:'rgba(59,130,246,.1)',pointBackgroundColor:'var(--blue)',tension:.3,yAxisID:'y1'}
+  ]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#eef2ff',font:{size:11}}},tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8'}},
+    scales:{
+      x:{ticks:{...CT,callback:v=>INR(v)},grid:{color:CG}},
+      y:{ticks:{...CT,color:'#8fa3c0'},grid:{display:false}},
+      y1:{position:'right',ticks:{...CT,color:'var(--blue)'},grid:{drawOnChartArea:false}}
+    }
+  }});
+}
+
+function renderRanking(){
+  const d=getRankData();
+  const topN=parseInt(gv('rTop')||'10');
+  const grand=ALL_DATA.reduce((s,r)=>s+r.loss_value,0)||1;
+
+  // ① FWD vs RTO
+  const fwdD=d.filter(isFwd), rtoD=d.filter(isRTO);
+  const mkFRCard=(label,arr,badge,clr)=>{
+    const l=arr.reduce((s,r)=>s+r.loss_value,0), sv=arr.reduce((s,r)=>s+r.shipment_value,0);
+    const pct=grand?+(l/grand*100).toFixed(1):0;
+    const lc=uniq(arr.map(r=>r.location)).length;
+    return`<div class="card">
+      <div class="ch"><div><div class="ct">${label}</div></div><span class="badge ${badge}">${badge.toUpperCase()}</span></div>
+      <div class="mprow">
+        <div class="mp"><div class="mplabel">Total AWBs</div><div class="mpval blue">${NUM(arr.length)}</div></div>
+        <div class="mp"><div class="mplabel">Loss Value</div><div class="mpval red">${INR(l)}</div></div>
+        <div class="mp"><div class="mplabel">Avg Loss</div><div class="mpval orange">${INR(Math.round(l/(arr.length||1)))}</div></div>
+        <div class="mp"><div class="mplabel">Locations</div><div class="mpval yellow">${NUM(lc)}</div></div>
+        <div class="mp"><div class="mplabel">Ship. Value</div><div class="mpval green">${INR(sv)}</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--t2);margin-top:4px;margin-bottom:4px"><span>% of total (all data)</span><span style="font-weight:800;color:${clr}">${pct}%</span></div>
+      <div class="ptbar"><div class="ptfill" style="width:${pct}%;background:${clr}"></div></div>
+    </div>`;
+  };
+  setEl('rankFwdRto',mkFRCard('Forward Losses',fwdD,'fwd','var(--blue)')+mkFRCard('RTO Losses',rtoD,'rto','var(--orange)'));
+
+  // ② ZONE
+  const zStats=buildStats(d,'Zone');
+  setEl('zoneRankTbl',rankTbl(zStats,999));
+  rankBarChart('chartZoneRankLoss',zStats,zStats.length,false);
+  mkChart('chartZoneRankAWB',{type:'bar',data:{labels:zStats.map(r=>r.name),datasets:[
+    {label:'FWD',data:zStats.map(r=>r.fwdN),backgroundColor:'rgba(59,130,246,.8)',stack:'s'},
+    {label:'RTO',data:zStats.map(r=>r.rtoN),backgroundColor:'rgba(249,115,22,.8)',stack:'s'}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#eef2ff',font:{size:11}}},tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8'}},
+    scales:{x:{ticks:CT,grid:{color:CG},stacked:true},y:{ticks:CT,grid:{color:CG},stacked:true}}}
+  });
+
+  // ③ REGIONAL HEAD
+  const rhStats=buildStats(d,'Regional Head');
+  setEl('rhRankTbl',rankTbl(rhStats,999));
+  rankBarChart('chartRHLoss',rhStats,rhStats.length,false);
+  mkChart('chartRHAWB',{type:'bar',data:{labels:rhStats.map(r=>r.name),datasets:[
+    {label:'FWD',data:rhStats.map(r=>r.fwdN),backgroundColor:'rgba(59,130,246,.8)',stack:'s'},
+    {label:'RTO',data:rhStats.map(r=>r.rtoN),backgroundColor:'rgba(249,115,22,.8)',stack:'s'}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#eef2ff',font:{size:11}}},tooltip:{backgroundColor:'#0f1724',borderColor:'#1e3050',borderWidth:1,titleColor:'#eef2ff',bodyColor:'#7e9ab8'}},
+    scales:{x:{ticks:CT,grid:{color:CG},stacked:true},y:{ticks:CT,grid:{color:CG},stacked:true}}}
+  });
+
+  // ④ CLUSTER WORST & ⑤ BEST
+  const chStats=buildStats(d,'Cluster Head');
+  setEl('chWorstTbl',rankTbl(chStats,topN));
+  rankBarChart('chartCHWorst',chStats,topN,false);
+  setEl('chBestTbl',rankTbl(chStats,topN,true));
+  rankBarChart('chartCHBest',chStats,topN,true);
+
+  // ⑥ LOC WORST & ⑦ BEST
+  const locStats=buildStats(d,'location');
+  setEl('locWorstTbl',rankTbl(locStats,topN));
+  rankBarChart('chartLocWorst',locStats,topN,false);
+  setEl('locBestTbl',rankTbl(locStats,topN,true));
+  rankBarChart('chartLocBest',locStats,topN,true);
+
+  // ⑧ ALL LOCATIONS full table with extra lookup for Zone/Cluster
+  const locFull=locStats.map(r=>{const sample=d.find(x=>x.location===r.name)||{};return{...r,zone:sample.Zone||'—',cluster:sample['Cluster Head']||'—'};});
+  const grandLF=locFull.reduce((s,r)=>s+r.loss,0)||1;
+  setEl('allLocTbl',`<table class="dt"><thead><tr>
+    <th>#</th><th>Location</th><th>Zone</th><th>Cluster Head</th>
+    <th>AWBs</th><th>Loss ₹</th><th>Avg Loss</th><th>FWD</th><th>RTO</th><th>% Contribution</th>
+  </tr></thead><tbody>${locFull.map((r,i)=>{
+    const pct=+(r.loss/grandLF*100).toFixed(1);
+    const mc=i===0?'m1':i===1?'m2':i===2?'m3':'mn';
+    return`<tr><td><span class="medal ${mc}">${i+1}</span></td>
+      <td><b>${r.name}</b></td><td style="color:var(--t2)">${r.zone}</td><td style="color:var(--t2)">${r.cluster}</td>
+      <td class="mono vblue">${NUM(r.n)}</td><td class="mono vred">${INR(r.loss)}</td>
+      <td class="mono vorange">${INR(Math.round(r.avg))}</td>
+      <td class="mono" style="color:#60a5fa">${NUM(r.fwdN)}</td>
+      <td class="mono vorange">${NUM(r.rtoN)}</td>
+      <td><div class="cbar"><div class="cbarfill" style="width:${Math.min(pct,100)}%;background:var(--red)"> ${pct>=4?pct+'%':''}</div></div><div style="font-size:.6rem;color:var(--t3);margin-top:2px">${pct}%</div></td>
+    </tr>`;
+  }).join('')}</tbody></table>`);
+
+  // ⑨ ZONE FULL CONTRIB
+  setEl('zoneContribTbl',contribTbl(zStats));
+  // ⑩ RH FULL CONTRIB
+  setEl('rhContribTbl',contribTbl(rhStats));
+
+  // ⑪ CLUSTER × REASON HEATMAP
+  const reasons=uniq(d.map(r=>r.reason_l1)).filter(r=>r&&r!=='Unknown').slice(0,8);
+  const chs2=buildStats(d,'Cluster Head').slice(0,topN).map(r=>r.name);
+  const hm={};
+  d.forEach(r=>{const k=r['Cluster Head']||'?';if(!hm[k])hm[k]={};hm[k][r.reason_l1]=(hm[k][r.reason_l1]||0)+1;});
+  const totals=chs2.map(c=>Object.values(hm[c]||{}).reduce((a,b)=>a+b,0));
+  setEl('chHeatmap',`<table class="dt"><thead><tr>
+    <th>Cluster Head</th>${reasons.map(r=>`<th style="color:var(--orange)">${r}</th>`).join('')}<th>Total</th>
+  </tr></thead><tbody>${chs2.map((c,ci)=>`<tr>
+    <td><b>${c}</b></td>
+    ${reasons.map(r=>{const v=hm[c]&&hm[c][r]?hm[c][r]:0;const pct=totals[ci]?v/totals[ci]:0;return`<td style="background:rgba(232,66,58,${(pct*.6).toFixed(2)});color:${v?'var(--text)':'var(--t3)'}">${v?NUM(v):'—'}</td>`;}).join('')}
+    <td class="mono vblue">${NUM(totals[ci])}</td>
+  </tr>`).join('')}</tbody></table>`);
+}
+
+function rankCSV(key){
+  const d=getRankData();
+  return buildStats(d,key).map(r=>({Name:r.name,'Total AWBs':r.n,'Loss Value':Math.round(r.loss),'Avg Loss':Math.round(r.avg),'Locations':r.locs,'FWD AWBs':r.fwdN,'FWD Loss':Math.round(r.fwdL),'FWD%':r.fwdPct,'RTO AWBs':r.rtoN,'RTO Loss':Math.round(r.rtoL),'RTO%':r.rtoPct,'% of Total':r.pct}));
+}
+
+// ═══════════════════════════════════════════════
+// RCA TAB
+// ═══════════════════════════════════════════════
+function searchRCA(){
+  const q=S(gv('rcaSearch')).toLowerCase();
+  const el=document.getElementById('rcaResult');
+  if(!q){el.innerHTML='';return;}
+  const matches=ALL_DATA.filter(r=>r.awb.toLowerCase().includes(q)||r.consolidation_awb.toLowerCase().includes(q));
+  if(!matches.length){el.innerHTML='<div style="color:var(--t2);padding:14px">No shipment found for this AWB.</div>';return;}
+  el.innerHTML=matches.slice(0,5).map(r=>`
+    <div class="rca-box">
+      <div class="rca-grid">
+        <div class="rca-field"><label>AWB</label><span class="mono">${r.awb}</span></div>
+        <div class="rca-field"><label>Date</label><span>${r.actual_lost_date}</span></div>
+        <div class="rca-field"><label>Type</label><span><span class="badge ${isFwd(r)?'fwd':'rto'}">${r.current_movement_type}</span></span></div>
+        <div class="rca-field"><label>Location</label><span>${r.location}</span></div>
+        <div class="rca-field"><label>Cluster</label><span>${r['Cluster Head']}</span></div>
+        <div class="rca-field"><label>Zone</label><span>${r.Zone}</span></div>
+        <div class="rca-field"><label>Loss Value</label><span class="mono vred">${INR(r.loss_value)}</span></div>
+        <div class="rca-field"><label>Reason L1</label><span>${r.reason_l1}</span></div>
+        <div class="rca-field"><label>Reason</label><span>${r.reason}</span></div>
+      </div>
+      <div class="flabel" style="margin-bottom:6px">RCA Remarks</div>
+      <textarea class="rta" id="rca_${r.awb}" placeholder="Enter root cause analysis remarks here...">${RCA_DATA[r.awb]?RCA_DATA[r.awb].remarks:r._rca||''}</textarea>
+      <button class="rsave" onclick="saveRCAEntry('${r.awb}','${r.location}','${r.reason_l1}')">💾 Save RCA</button>
+    </div>`).join('');
+}
+
+function saveRCAEntry(awb,loc,r1){
+  const ta=document.getElementById('rca_'+awb);
+  if(!ta)return;
+  const remarks=ta.value.trim();
+  if(!remarks){toast('Please enter remarks','var(--red)');return;}
+  RCA_DATA[awb]={remarks,updatedBy:currentUser.email,mobile:currentUser.mobile,updatedAt:new Date().toLocaleString()};
+  const idx=ALL_DATA.findIndex(r=>r.awb===awb);
+  if(idx>=0)ALL_DATA[idx]._rca=remarks;
+  saveRCA();
+  renderRCAHistory();
+  toast('✓ RCA saved for '+awb,'var(--green)');
+}
+
+function renderRCAHistory(){
+  const entries=Object.entries(RCA_DATA).sort((a,b)=>new Date(b[1].updatedAt)-new Date(a[1].updatedAt)).slice(0,20);
+  setEl('rcaHistory',entries.map(([awb,d])=>{
+    const r=ALL_DATA.find(x=>x.awb===awb)||{};
+    return`<tr><td class="mono">${awb}</td><td>${r.location||'—'}</td><td class="mono vred">${INR(r.loss_value)}</td>
+      <td>${r.reason_l1||'—'}</td><td>${d.remarks.substring(0,50)}${d.remarks.length>50?'…':''}</td>
+      <td style="font-size:.68rem">${d.updatedBy}</td><td style="font-size:.68rem;color:var(--t2)">${d.updatedAt}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" style="color:var(--t2);text-align:center;padding:20px">No RCA updates yet</td></tr>');
+
+  const scope=currentUser.role==='super'?ALL_DATA:ALL_DATA.filter(r=>{
+    if(currentUser.role==='admin')return r['Regional Head']===currentUser.limit||r.Zone===currentUser.zone;
+    return r.location===currentUser.location||r['Cluster Head']===currentUser.limit;
+  });
+  const pending=scope.filter(r=>!r._rca);
+  setEl('pendingBody',pending.slice(0,50).map(r=>`<tr>
+    <td class="mono">${r.awb}</td><td style="font-size:.72rem">${r.actual_lost_date}</td>
+    <td>${r.location}</td><td style="color:var(--t2)">${r['Cluster Head']}</td>
+    <td class="mono vred">${INR(r.loss_value)}</td>
+    <td>${r.reason_l1}</td>
+    <td><span class="badge ${isFwd(r)?'fwd':'rto'}">${r.current_movement_type}</span></td>
+    <td><button onclick="document.getElementById('rcaSearch').value='${r.awb}';searchRCA()" style="background:var(--blue);border:none;border-radius:6px;color:#fff;padding:4px 10px;font-size:.7rem;cursor:pointer">Update</button></td>
+  </tr>`).join('')||'<tr><td colspan="8" style="color:var(--green);text-align:center;padding:20px">✓ All RCAs complete!</td></tr>');
+}
+
+function pendingRCAData(){
+  return ALL_DATA.filter(r=>!r._rca).map(r=>({AWB:r.awb,Date:r.actual_lost_date,Location:r.location,'Cluster Head':r['Cluster Head'],Zone:r.Zone,'Loss Value':Math.round(r.loss_value),'Reason L1':r.reason_l1,Type:r.current_movement_type}));
+}
+
+// ═══════════════════════════════════════════════
+// PERFORMANCE TAB
+// ═══════════════════════════════════════════════
+function myData(){
+  if(!currentUser)return[];
+  const isAdmin=currentUser.role==='super'||currentUser.role==='admin';
+  return ALL_DATA.filter(r=>{
+    if(gv('pMonth')&&r._month!==gv('pMonth'))return false;
+    if(isAdmin)return true;
+    return r['Cluster Head']===currentUser.limit||r.location===currentUser.location;
+  });
+}
+
+function renderPerf(){
+  const d=myData();
+  const totalLoss=d.reduce((s,r)=>s+r.loss_value,0);
+  const n=d.length, avg=n?totalLoss/n:0;
+  const rcaDone=d.filter(r=>r._rca).length;
+  setEl('perfKPI',`
+    <div class="kpi red"><div class="klabel">My Loss Value</div><div class="kval red">${INR(totalLoss)}</div></div>
+    <div class="kpi blue"><div class="klabel">My AWBs</div><div class="kval blue">${NUM(n)}</div></div>
+    <div class="kpi orange"><div class="klabel">Avg Loss</div><div class="kval orange">${INR(Math.round(avg))}</div></div>
+    <div class="kpi green"><div class="klabel">RCA Done</div><div class="kval green">${NUM(rcaDone)}/${NUM(n)}</div></div>
+  `);
+  // Month trend
+  const mm={};d.forEach(r=>{if(!mm[r._month])mm[r._month]=0;mm[r._month]+=r.loss_value;});
+  const months=Object.keys(mm).filter(m=>m!=='Unknown').sort((a,b)=>{const pa=a.split('-'),pb=b.split('-');return(+pa[1]-+pb[1])||MONTHS.indexOf(pa[0])-MONTHS.indexOf(pb[0]);});
+  mkChart('chartMyTrend',barCfg(months,[{label:'Loss ₹',data:months.map(m=>Math.round(mm[m])),backgroundColor:'rgba(232,66,58,.7)',borderColor:'var(--red)',borderWidth:1}],{inr:true}));
+  // RCA progress by reason
+  const r1map={};
+  d.forEach(r=>{if(!r1map[r.reason_l1])r1map[r.reason_l1]={n:0,done:0};r1map[r.reason_l1].n++;if(r._rca)r1map[r.reason_l1].done++;});
+  const top5=Object.entries(r1map).sort((a,b)=>b[1].n-a[1].n).slice(0,6);
+  setEl('rcaProgBars',top5.map(([r,v])=>{const pct=v.n?Math.round(v.done/v.n*100):0;return`<div class="prog-row"><div class="prog-label">${r}</div><div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${pct===100?'var(--green)':'var(--blue)'}"></div></div><div class="prog-pct">${pct}%</div></div>`;}).join(''));
+  setEl('myLogBody',d.slice(0,50).map(r=>`<tr>
+    <td class="mono">${r.awb}</td><td style="font-size:.7rem">${r.actual_lost_date}</td>
+    <td>${r.location}</td>
+    <td><span class="badge ${isFwd(r)?'fwd':'rto'}">${r.current_movement_type}</span></td>
+    <td>${r.reason_l1}</td><td class="mono vred">${INR(r.loss_value)}</td>
+    <td>${r._rca?'<span class="badge ok">✓ Done</span>':'<span class="badge warn">Pending</span>'}</td>
+  </tr>`).join('')||'<tr><td colspan="7" style="color:var(--t2);text-align:center;padding:20px">No data</td></tr>');
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN TAB
+// ═══════════════════════════════════════════════
+function renderAdmin(){
+  setEl('userTbody',USERS.map(u=>`<tr>
+    <td>${u.email}</td><td class="mono">${u.mobile}</td>
+    <td><span class="badge ${u.role==='super'?'super':u.role==='admin'?'admin':'user'}">${u.role==='super'?'Super Admin':u.role==='admin'?'Admin':'User'}</span></td>
+    <td>${u.limit||'—'}</td>
+    <td><span class="badge ok">Active</span></td>
+  </tr>`).join(''));
+
+  const totalLoss=ALL_DATA.reduce((s,r)=>s+r.loss_value,0);
+  const totalSV=ALL_DATA.reduce((s,r)=>s+r.shipment_value,0);
+  const rcaDone=ALL_DATA.filter(r=>r._rca).length;
+  setEl('adminKPI',`
+    <div class="kpi red"><div class="klabel">Total Loss</div><div class="kval red">${INR(totalLoss)}</div></div>
+    <div class="kpi blue"><div class="klabel">Total AWBs</div><div class="kval blue">${NUM(ALL_DATA.length)}</div></div>
+    <div class="kpi green"><div class="klabel">Shipment Value</div><div class="kval green">${INR(totalSV)}</div></div>
+    <div class="kpi orange"><div class="klabel">Loss %</div><div class="kval orange">${totalSV?+(totalLoss/totalSV*100).toFixed(2):0}%</div></div>
+  `);
+  const months=uniq(ALL_DATA.map(r=>r._month)).filter(m=>m!=='Unknown');
+  const zones=uniq(ALL_DATA.map(r=>r.Zone));
+  const noRca=ALL_DATA.filter(r=>!r._rca).length;
+  const pct=ALL_DATA.length?Math.round(rcaDone/ALL_DATA.length*100):0;
+  setEl('dataHealth',`
+    <div class="prog-row"><div class="prog-label">RCA Completion</div><div class="prog-bg"><div class="prog-fill" style="width:${pct}%;background:${pct===100?'var(--green)':'var(--orange)'}"></div></div><div class="prog-pct">${pct}%</div></div>
+    <div style="font-size:.72rem;color:var(--t2)">Months: <b>${months.length}</b> | Zones: <b>${zones.length}</b></div>
+    <div style="font-size:.72rem;color:var(--t2)">Pending RCA: <b style="color:var(--red)">${noRca}</b> / ${ALL_DATA.length}</div>
+    <div style="font-size:.72rem;color:var(--t2)">Total users: <b>${USERS.length}</b></div>
+  `);
+}
+
+// ═══════════════════════════════════════════════
+// DATA UPLOAD
+// ═══════════════════════════════════════════════
+// Show expected columns on load
+function initUploadPanel(){
+  const el=document.getElementById('expectedCols');
+  if(el)el.innerHTML=COLS.map(c=>`<span style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--blue);border-radius:4px;padding:2px 8px;font-size:.62rem;font-family:var(--mono)">${c}</span>`).join('');
+}
+
+function handleDrop(e,type){
+  const f=e.dataTransfer.files[0];if(!f)return;
+  if(type==='loss')uploadLoss({files:[f]});
+  else uploadUsers({files:[f]});
+}
+
+function setProgress(pct,label){
+  const wrap=document.getElementById('lossPBar'),fill=document.getElementById('lossPFill');
+  const pctEl=document.getElementById('lossPPct'),lblEl=document.getElementById('lossPLabel');
+  if(wrap)wrap.style.display='block';
+  if(fill)fill.style.width=pct+'%';
+  if(pctEl)pctEl.textContent=pct+'%';
+  if(lblEl&&label)lblEl.textContent=label;
+}
+
+function statusMsg(id,msg,color){
+  const el=document.getElementById(id);if(!el)return;
+  el.style.display='block';el.style.color=color;el.textContent=msg;
+}
+
+function uploadLoss(input){
+  const file=input.files[0];if(!file)return;
+  statusMsg('lossStatus','⏳ Reading file…','var(--yellow)');
+  setProgress(10,'Reading file…');
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      setProgress(25,'Parsing Excel…');
+      const wb=XLSX.read(e.target.result,{type:'binary',cellDates:false,raw:false});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(!rows.length){statusMsg('lossStatus','❌ File is empty or unreadable.','var(--red)');return;}
+
+      // Show detected columns
+      const detectedCols=Object.keys(rows[0]);
+      const colsEl=document.getElementById('colsDetected'),colsList=document.getElementById('colsList');
+      if(colsEl){colsEl.style.display='block';colsList.innerHTML=detectedCols.map(c=>`<span style="background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:.62rem;font-family:var(--mono);color:var(--blue)">${c}</span>`).join('');}
+
+      setProgress(50,`Mapping ${rows.length.toLocaleString()} rows…`);
+      statusMsg('lossStatus',`⏳ Mapping ${rows.length.toLocaleString()} rows…`,'var(--yellow)');
+
+      const g=(r,...keys)=>{for(const k of keys){if(r[k]!==undefined&&r[k]!==null&&S(r[k])!=='')return r[k];}return '';};
+
+      ALL_DATA=rows.map((r,idx)=>{
+        const dateRaw=g(r,'actual_lost_date');
+        return{
+          actual_lost_date:S(g(r,'actual_lost_date')),
+          current_movement_type:S(g(r,'current_movement_type')),
+          awb:S(g(r,'awb','AWB'))||('ROW'+idx),
+          consolidation_awb:S(g(r,'consolidation_awb')),
+          loss_percentage:N(g(r,'loss_percentage')),
+          shipment_value:N(g(r,'shipment_value')),
+          loss_value:N(g(r,'loss_value')),
+          location:S(g(r,'location')),
+          leg:S(g(r,'leg')),
+          reason:S(g(r,'reason')),
+          reason_l1:S(g(r,'reason_l1')),
+          attribution_changed:S(g(r,'attribution_changed')),
+          credit_location:S(g(r,'credit_location')),
+          'Cluster Head':S(g(r,'Cluster Head')),
+          Zone:S(g(r,'Zone')),
+          'Regional Head':S(g(r,'Regional Head')),
+          _month:parseMonth(dateRaw),
+          _rca:''
+        };
+      });
+
+      // Re-apply saved RCA
+      ALL_DATA.forEach(r=>{if(RCA_DATA[r.awb])r._rca=RCA_DATA[r.awb].remarks;});
+      FILTERED_DATA=[...ALL_DATA];
+
+      setProgress(75,'Saving to IndexedDB…');
+      await saveLoss();
+
+      setProgress(90,'Building filters…');
+      populateFilters();
+      FILTERED_DATA=[...ALL_DATA];
+
+      // Preview
+      const prev=document.getElementById('previewSection'),prevTbl=document.getElementById('previewTbl');
+      if(prev&&prevTbl){
+        prev.style.display='block';
+        const pcols=['actual_lost_date','current_movement_type','awb','location','Zone','Cluster Head','loss_value','reason_l1'];
+        prevTbl.innerHTML=`<table class="dt"><thead><tr>${pcols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${ALL_DATA.slice(0,10).map(r=>`<tr>${pcols.map(c=>`<td style="font-size:.72rem">${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      }
+
+      setProgress(100,'Done!');
+      const months=uniq(ALL_DATA.map(r=>r._month)).filter(m=>m!=='Unknown');
+      const zones=uniq(ALL_DATA.map(r=>r.Zone));
+      const locs=uniq(ALL_DATA.map(r=>r.location));
+      statusMsg('lossStatus',`✅ ${rows.length.toLocaleString()} records | ${months.length} months | ${locs.length} locations | ${zones.length} zones`,'var(--green)');
+      setEl('datasetSub',`${rows.length.toLocaleString()} records from ${file.name}`);
+      updateDatasetInfo();
+      renderDashboard();
+      switchTab('dashboard');
+    }catch(err){
+      statusMsg('lossStatus',`❌ ${err.message}`,'var(--red)');
+      setProgress(0,'');
+      console.error('[LossIQ] Upload error:',err);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function uploadUsers(input){
+  const file=input.files[0];if(!file)return;
+  statusMsg('usersStatus','⏳ Reading…','var(--yellow)');
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      // Try named columns first, fallback to positional
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const superAdmin=USERS.find(u=>u.mobile==='9999999999');
+      const newUsers=[superAdmin];
+      rows.forEach(r=>{
+        // Support both header styles: email_id/email, mobile, user/role, limit, password
+        const email=S(r.email_id||r.email||r.Email_ID||r.Email||'');
+        const mobile=S(r.mobile||r.Mobile||'');
+        const roleRaw=S(r.user||r.User||r.role||r.Role||r.limit||r.Limit||'');
+        const limit=S(r.limit||r.Limit||roleRaw);
+        const pwd=S(r.password||r.Password||'')||'User@'+mobile.slice(-4);
+        if(!email&&!mobile)return;
+        const role=/regional head|manager|admin/i.test(roleRaw)?'admin':'user';
+        newUsers.push({email,mobile,role,limit,zone:'All',password:pwd});
+      });
+      USERS=newUsers;
+      await saveUsers();
+      statusMsg('usersStatus',`✅ ${newUsers.length} users loaded`,'var(--green)');
+      renderAdmin();
+      toast(`✓ ${newUsers.length} users loaded`,'var(--green)');
+    }catch(err){
+      statusMsg('usersStatus',`❌ ${err.message}`,'var(--red)');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function updateDatasetInfo(){
+  const el=document.getElementById('datasetInfo');if(!el)return;
+  if(!ALL_DATA.length){el.innerHTML='<div style="color:var(--t2);padding:16px">No data loaded. Upload Loss.xlsx above.</div>';return;}
+  const months=uniq(ALL_DATA.map(r=>r._month)).filter(m=>m!=='Unknown');
+  const zones=uniq(ALL_DATA.map(r=>r.Zone));
+  const locs=uniq(ALL_DATA.map(r=>r.location));
+  el.innerHTML=`<div class="kpi-grid" style="margin:0"><div class="kpi blue"><div class="klabel">Total Records</div><div class="kval blue">${NUM(ALL_DATA.length)}</div></div><div class="kpi orange"><div class="klabel">Months</div><div class="kval orange">${months.length}</div><div class="ksub">${months[0]||'—'} → ${months[months.length-1]||'—'}</div></div><div class="kpi green"><div class="klabel">Zones</div><div class="kval green">${zones.length}</div></div><div class="kpi yellow"><div class="klabel">Locations</div><div class="kval yellow">${locs.length}</div></div></div>`;
+}
+
+// ═══════════════════════════════════════════════
+// CSV DOWNLOAD
+// ═══════════════════════════════════════════════
+function dlCSV(data,filename){
+  if(!data||!data.length)return;
+  const h=Object.keys(data[0]);
+  const csv=[h.join(','),...data.map(r=>h.map(k=>JSON.stringify(r[k]??'')).join(','))].join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=filename;a.click();
+}
+
+// ═══════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
+  if(name==='summary')renderSummary();
+  else if(name==='ranking')renderRanking();
+  else if(name==='rca')renderRCAHistory();
+  else if(name==='performance')renderPerf();
+  else if(name==='admin')renderAdmin();
+  else if(name==='data'){updateDatasetInfo();initUploadPanel();}
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+async function initApp(){
+  try{
+    await Promise.all([loadLoss(),loadRCA()]);
+    if(ALL_DATA.length){
+      FILTERED_DATA=[...ALL_DATA];
+      populateFilters();
+      renderDashboard();
+    }
+    updateDatasetInfo();
+    initUploadPanel();
+  }catch(err){console.error('[LossIQ] Init error:',err);}
+}
+
+// Init login type toggle on page load
+window.addEventListener('DOMContentLoaded',async()=>{
+  // Load users from IDB on start (but keep super admin)
+  try{
+    const d=await idbGet(K_USERS);
+    if(d&&d.length){const superAdmin=USERS.find(u=>u.mobile==='9999999999');const loaded=d.filter(u=>u.mobile!=='9999999999');USERS=[superAdmin,...loaded];}
+  }catch(e){}
+  document.getElementById('ltype').dispatchEvent(new Event('change'));
+});
+</script>
+</body></html>
