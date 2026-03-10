@@ -1001,7 +1001,7 @@ function renderDashboard(){
     locMap[r.location].n++;locMap[r.location].loss+=r.loss_value;
     if(isFwd(r))locMap[r.location].fwd++;else locMap[r.location].rto++;
   });
-  const topLocs=Object.entries(locMap).sort((a,b)=>b[1].loss-a[1].loss).slice(0,10);
+  const topLocs=Object.entries(locMap).sort((a,b)=>a[1].loss-b[1].loss).slice(0,10);
   setEl('topLocBody',topLocs.map(([loc,v],i)=>`<tr>
     <td><span class="medal ${i===0?'m1':i===1?'m2':i===2?'m3':'mn'}">${i+1}</span></td>
     <td><b>${loc}</b></td><td class="t2">${v.ch}</td><td class="t2">${v.zone}</td>
@@ -1016,7 +1016,7 @@ function renderDashboard(){
 function topLocCSV(){
   const d=FILTERED_DATA, locMap={};
   d.forEach(r=>{if(!locMap[r.location])locMap[r.location]={n:0,loss:0,fwd:0,rto:0};locMap[r.location].n++;locMap[r.location].loss+=r.loss_value;if(isFwd(r))locMap[r.location].fwd++;else locMap[r.location].rto++;});
-  return Object.entries(locMap).sort((a,b)=>b[1].loss-a[1].loss).map(([l,v])=>({Location:l,AWBs:v.n,Loss:Math.round(v.loss),FWD:v.fwd,RTO:v.rto}));
+  return Object.entries(locMap).sort((a,b)=>a[1].loss-b[1].loss).map(([l,v])=>({Location:l,AWBs:v.n,Loss:Math.round(v.loss),FWD:v.fwd,RTO:v.rto}));
 }
 </script>
 <script>
@@ -1146,10 +1146,10 @@ function buildStats(data, key){
     pct:+(v.loss/grand*100).toFixed(1),
     fwdPct:v.loss?+(v.fwdL/v.loss*100).toFixed(1):0,
     rtoPct:v.loss?+(v.rtoL/v.loss*100).toFixed(1):0
-  })).sort((a,b)=>b.loss-a.loss);
+  })).sort((a,b)=>a.loss-b.loss);
 }
 
-// Render a ranking table (Low = high loss, best = low loss)
+// Render ranking (Rank1 = lowest loss, higher loss = lower rank)
 function rankTbl(stats, topN, best=false){
   const sl=best?[...stats].sort((a,b)=>a.loss-b.loss).slice(0,topN):stats.slice(0,topN);
   if(!sl.length)return '<div style="color:var(--t2);padding:16px">No data</div>';
