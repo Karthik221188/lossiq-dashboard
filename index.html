@@ -426,11 +426,11 @@ canvas{display:block;width:100%!important}
         <div class="card"><div class="ch"><div><div class="ct">Regional Head — AWBs</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartRHAWB"></canvas></div></div>
       </div>
 
-      <!-- ④ CLUSTER — Worst -->
-      <div class="sh" style="border-color:var(--red)">④ Top 10 Cluster Heads — HIGHEST Loss (Worst)</div>
+      <!-- ④ CLUSTER — Low -->
+      <div class="sh" style="border-color:var(--red)">④ Top 10 Cluster Heads — HIGHEST Loss (Low)</div>
       <div class="g2">
-        <div class="card"><div class="ch"><div><div class="ct">🔴 Worst Cluster Heads</div><div class="cs">Highest loss value · all zones</div></div><button class="dl" onclick="dlCSV(rankCSV('Cluster Head'),'ch_rank.csv')">⬇ CSV</button></div><div class="tw" id="chWorstTbl"></div></div>
-        <div class="card"><div class="ch"><div><div class="ct">Worst Clusters — Loss Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartCHWorst"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">🔴 Low Cluster Heads</div><div class="cs">Highest loss value · all zones</div></div><button class="dl" onclick="dlCSV(rankCSV('Cluster Head'),'ch_rank.csv')">⬇ CSV</button></div><div class="tw" id="chLowTbl"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Low Clusters — Loss Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartCHLow"></canvas></div></div>
       </div>
 
       <!-- ⑤ CLUSTER — Best -->
@@ -440,11 +440,11 @@ canvas{display:block;width:100%!important}
         <div class="card"><div class="ch"><div><div class="ct">Best Clusters — Loss Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartCHBest"></canvas></div></div>
       </div>
 
-      <!-- ⑥ LOCATION — Worst -->
+      <!-- ⑥ LOCATION — Low -->
       <div class="sh" style="border-color:var(--red)">⑥ Top 10 Locations — HIGHEST Loss</div>
       <div class="g2">
-        <div class="card"><div class="ch"><div><div class="ct">🔴 Worst Locations</div></div><button class="dl" onclick="dlCSV(rankCSV('location'),'loc_rank.csv')">⬇ CSV</button></div><div class="tw" id="locWorstTbl"></div></div>
-        <div class="card"><div class="ch"><div><div class="ct">Worst Locations — Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartLocWorst"></canvas></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">🔴 Low Locations</div></div><button class="dl" onclick="dlCSV(rankCSV('location'),'loc_rank.csv')">⬇ CSV</button></div><div class="tw" id="locLowTbl"></div></div>
+        <div class="card"><div class="ch"><div><div class="ct">Low Locations — Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartLocLow"></canvas></div></div>
       </div>
 
       <!-- ⑦ LOCATION — Best -->
@@ -533,7 +533,25 @@ canvas{display:block;width:100%!important}
         <div class="card"><div class="ch"><div><div class="ct">Data Health</div></div></div><div id="dataHealth" style="display:flex;flex-direction:column;gap:8px"></div></div>
       </div>
     </div>
+<div class="tab admin-tab" data-tab="userAccess" onclick="switchTab('userAccess')">👤 User Access</div>
 
+<!-- User Access Panel -->
+<div class="panel" id="panel-userAccess">
+  <div class="sh orange">Create User Access</div>
+  <div class="card">
+    <label class="llabel">User Name</label>
+    <input class="linput" id="newUserName" type="text" placeholder="Enter name"/>
+    <label class="llabel">Mobile / Email</label>
+    <input class="linput" id="newUserID" type="text" placeholder="Enter mobile/email"/>
+    <label class="llabel">Role</label>
+    <select class="lselect" id="newUserRole">
+      <option value="User">User</option>
+      <option value="Regional Head">Regional Head</option>
+      <option value="Cluster Head">Cluster Head</option>
+    </select>
+    <button class="lbtn" onclick="createUser()">Create User</button>
+  </div>
+</div>
     <!-- ═══ DATA UPLOAD ═══ -->
     <div class="panel" id="panel-data">
       <!-- HOW-TO -->
@@ -1131,7 +1149,7 @@ function buildStats(data, key){
   })).sort((a,b)=>b.loss-a.loss);
 }
 
-// Render a ranking table (worst = high loss, best = low loss)
+// Render a ranking table (Low = high loss, best = low loss)
 function rankTbl(stats, topN, best=false){
   const sl=best?[...stats].sort((a,b)=>a.loss-b.loss).slice(0,topN):stats.slice(0,topN);
   if(!sl.length)return '<div style="color:var(--t2);padding:16px">No data</div>';
@@ -1245,17 +1263,17 @@ function renderRanking(){
     scales:{x:{ticks:CT,grid:{color:CG},stacked:true},y:{ticks:CT,grid:{color:CG},stacked:true}}}
   });
 
-  // ④ CLUSTER WORST & ⑤ BEST
+  // ④ CLUSTER Low & ⑤ BEST
   const chStats=buildStats(d,'Cluster Head');
-  setEl('chWorstTbl',rankTbl(chStats,topN));
-  rankBarChart('chartCHWorst',chStats,topN,false);
+  setEl('chLowTbl',rankTbl(chStats,topN));
+  rankBarChart('chartCHLow',chStats,topN,false);
   setEl('chBestTbl',rankTbl(chStats,topN,true));
   rankBarChart('chartCHBest',chStats,topN,true);
 
-  // ⑥ LOC WORST & ⑦ BEST
+  // ⑥ LOC Low & ⑦ BEST
   const locStats=buildStats(d,'location');
-  setEl('locWorstTbl',rankTbl(locStats,topN));
-  rankBarChart('chartLocWorst',locStats,topN,false);
+  setEl('locLowTbl',rankTbl(locStats,topN));
+  rankBarChart('chartLocLow',locStats,topN,false);
   setEl('locBestTbl',rankTbl(locStats,topN,true));
   rankBarChart('chartLocBest',locStats,topN,true);
 
