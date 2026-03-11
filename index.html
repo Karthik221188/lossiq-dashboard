@@ -503,6 +503,7 @@ canvas{display:block;width:100%!important}
       </div>
     </div>
 
+
     <!-- ═══ PERFORMANCE ═══ -->
     <div class="panel" id="panel-performance">
       <div class="fbar">
@@ -1146,7 +1147,7 @@ function buildStats(data, key){
     pct:+(v.loss/grand*100).toFixed(1),
     fwdPct:v.loss?+(v.fwdL/v.loss*100).toFixed(1):0,
     rtoPct:v.loss?+(v.rtoL/v.loss*100).toFixed(1):0
-  })).sort((a,b)=>a.loss-b.loss);
+  })).sort((a,b)=>b.loss-a.loss);
 }
 
 // Render ranking (Rank1 = lowest loss, higher loss = lower rank)
