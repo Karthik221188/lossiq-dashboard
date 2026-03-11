@@ -483,26 +483,310 @@ canvas{display:block;width:100%!important}
       </div>
     </div>
 
-    <!-- ═══ RCA ═══ -->
-    <div class="panel" id="panel-rca">
-      <div class="card" style="margin-bottom:18px">
-        <div class="ch"><div><div class="ct">🔍 Search & Update RCA</div><div class="cs">Enter AWB to find shipment and add RCA remarks</div></div></div>
-        <div class="frow" style="margin-bottom:0">
-          <div class="fg" style="flex:3"><div class="flabel">AWB / Consolidation AWB</div><input class="finput" id="rcaSearch" placeholder="Enter AWB number..." onkeydown="if(event.key==='Enter')searchRCA()"/></div>
-          <button class="fbtn" onclick="searchRCA()" style="margin-top:auto">🔍 Search</button>
-        </div>
-        <div id="rcaResult" style="margin-top:14px"></div>
-      </div>
-      <div class="card" style="margin-bottom:18px">
-        <div class="ch"><div><div class="ct">📋 Recent RCA Updates</div><div class="cs">Last 20 submitted</div></div></div>
-        <div class="tw"><table class="dt"><thead><tr><th>AWB</th><th>Location</th><th>Loss ₹</th><th>Reason L1</th><th>RCA Remarks</th><th>Updated By</th><th>Time</th></tr></thead><tbody id="rcaHistory"></tbody></table></div>
-      </div>
-      <div class="full card">
-        <div class="ch"><div><div class="ct">Pending RCA — My Area</div><div class="cs">Shipments without RCA</div></div><button class="dl" onclick="dlCSV(pendingRCAData(),'pending_rca.csv')">⬇ CSV</button></div>
-        <div class="tw"><table class="dt"><thead><tr><th>AWB</th><th>Date</th><th>Location</th><th>Cluster</th><th>Loss ₹</th><th>Reason L1</th><th>Type</th><th>Action</th></tr></thead><tbody id="pendingBody"></tbody></table></div>
-      </div>
-    </div>
 
+<!-- ═════════════════ RCA MODULE START ═════════════════ -->
+
+<div class="panel" id="panel-rca">
+
+<!-- SEARCH RCA -->
+<div class="card" style="margin-bottom:18px">
+
+<div class="ch">
+<div>
+<div class="ct">🔍 Search & Update RCA</div>
+<div class="cs">Enter AWB to find shipment and update RCA</div>
+</div>
+</div>
+
+<div class="frow">
+
+<div class="fg" style="flex:3">
+<div class="flabel">AWB / Consolidation AWB</div>
+<input class="finput" id="rcaSearch"
+placeholder="Enter AWB"
+onkeydown="if(event.key==='Enter')searchRCA()"/>
+</div>
+
+<button class="fbtn" onclick="searchRCA()" style="margin-top:auto">
+🔍 Search
+</button>
+
+</div>
+
+<div id="rcaResult" style="margin-top:14px"></div>
+
+</div>
+
+
+<!-- BULK RCA UPDATE -->
+<div class="card" style="margin-bottom:18px">
+
+<div class="ch">
+<div>
+<div class="ct">⚡ Bulk RCA Update</div>
+<div class="cs">Paste up to 10,000 AWB separated by comma or new line</div>
+</div>
+</div>
+
+<div class="frow">
+
+<div class="fg" style="flex:4">
+<div class="flabel">Paste AWBs</div>
+
+<textarea id="bulkAWB" class="finput"
+style="height:120px"
+placeholder="123456,123457,123458"></textarea>
+
+</div>
+
+</div>
+
+<div class="frow">
+
+<div class="fg">
+<div class="flabel">Primary Reason</div>
+
+<select id="bulkReason" class="finput">
+<option value="">Select Reason</option>
+<option>Tampered/Damage - Updated in G Form</option>
+<option>Debit Acceptance Obtain pending from Source/Destination</option>
+<option>Debit Accepted by SC</option>
+</select>
+
+</div>
+
+<div class="fg" style="flex:3">
+
+<div class="flabel">Remarks</div>
+<input id="bulkRemarks"
+class="finput"
+placeholder="Enter RCA remarks"/>
+
+</div>
+
+<button class="fbtn"
+onclick="bulkUpdateRCA()"
+style="margin-top:auto">
+
+🚀 Update RCA
+
+</button>
+
+</div>
+
+<div id="bulkStatus" style="margin-top:10px"></div>
+
+</div>
+
+
+<!-- RCA PROGRESS -->
+<div class="card" style="margin-bottom:18px">
+
+<div class="ch">
+<div>
+<div class="ct">📊 RCA Progress</div>
+<div class="cs">Total vs Updated vs Pending</div>
+</div>
+</div>
+
+<div class="tw">
+
+<table class="dt">
+
+<thead>
+<tr>
+<th>Level</th>
+<th>Total</th>
+<th>Updated</th>
+<th>Pending</th>
+</tr>
+</thead>
+
+<tbody id="rcaProgress"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+<!-- RCA HISTORY -->
+<div class="card" style="margin-bottom:18px">
+
+<div class="ch">
+<div>
+<div class="ct">📋 Recent RCA Updates</div>
+<div class="cs">Last 20 submitted</div>
+</div>
+</div>
+
+<div class="tw">
+
+<table class="dt">
+
+<thead>
+<tr>
+<th>AWB</th>
+<th>Location</th>
+<th>Loss ₹</th>
+<th>Reason L1</th>
+<th>RCA Remarks</th>
+<th>Time</th>
+</tr>
+</thead>
+
+<tbody id="rcaHistory"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+<!-- PENDING RCA -->
+<div class="full card">
+
+<div class="ch">
+
+<div>
+<div class="ct">Pending RCA</div>
+<div class="cs">Shipments without RCA</div>
+</div>
+
+</div>
+
+<div class="tw">
+
+<table class="dt">
+
+<thead>
+<tr>
+<th>AWB</th>
+<th>Date</th>
+<th>Location</th>
+<th>Cluster</th>
+<th>Loss ₹</th>
+<th>Reason</th>
+</tr>
+</thead>
+
+<tbody id="pendingBody"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* BULK RCA UPDATE */
+
+function bulkUpdateRCA(){
+
+let input=document.getElementById("bulkAWB").value.trim()
+
+if(!input){
+alert("Paste AWB numbers")
+return
+}
+
+let awbs=input
+.replace(/\n/g,",")
+.split(",")
+.map(x=>x.trim())
+.filter(x=>x)
+
+if(awbs.length>10000){
+alert("Maximum 10000 AWB allowed")
+return
+}
+
+let reason=document.getElementById("bulkReason").value
+let remarks=document.getElementById("bulkRemarks").value
+
+if(!reason){
+alert("Select Primary Reason")
+return
+}
+
+let updated=0
+
+awbs.forEach(a=>{
+
+let row=shipments.find(s=>s.AWB==a)
+
+if(row){
+
+row["Reason L1"]=reason
+row["RCA Remarks"]=remarks
+row["RCA Updated"]=true
+row["RCA Time"]=new Date().toLocaleString()
+
+updated++
+
+}
+
+})
+
+document.getElementById("bulkStatus").innerHTML=
+"✅ Updated "+updated+" / "+awbs.length+" AWBs"
+
+loadRCAProgress()
+renderRCAHistory()
+
+}
+
+
+/* RCA PROGRESS */
+
+function loadRCAProgress(){
+
+let stats={}
+
+shipments.forEach(s=>{
+
+let zone=s.Zone||"Unknown"
+
+if(!stats[zone]) stats[zone]={total:0,updated:0}
+
+stats[zone].total++
+
+if(s["RCA Updated"]) stats[zone].updated++
+
+})
+
+let html=""
+
+Object.keys(stats).forEach(z=>{
+
+let t=stats[z].total
+let u=stats[z].updated
+let p=t-u
+
+html+=`
+<tr>
+<td>${z}</td>
+<td>${t}</td>
+<td>${u}</td>
+<td>${p}</td>
+</tr>
+`
+
+})
+
+document.getElementById("rcaProgress").innerHTML=html
+
+}
+
+</script>
+
+<!-- ═════════════════ RCA MODULE END ═════════════════ -->
 
     <!-- ═══ PERFORMANCE ═══ -->
     <div class="panel" id="panel-performance">
@@ -565,6 +849,39 @@ canvas{display:block;width:100%!important}
           <div class="rca-box" style="padding:12px"><div style="font-size:1.3rem;margin-bottom:6px">4️⃣</div><div style="font-size:.78rem;font-weight:700">Dashboard auto-opens with your data</div></div>
         </div>
       </div>
+<!-- AWB DUPLICATE ANALYSIS -->
+<div class="card" style="margin-bottom:18px">
+
+<div class="ch">
+<div>
+<div class="ct">📊 AWB Upload Analysis</div>
+<div class="cs">Duplicate AWB will be automatically removed</div>
+</div>
+</div>
+
+<div class="tw">
+<table class="dt">
+
+<tr>
+<th>Total Uploaded</th>
+<td id="totalUpload">0</td>
+</tr>
+
+<tr>
+<th>Duplicate AWB</th>
+<td id="dupCount">0</td>
+</tr>
+
+<tr>
+<th>Actual Unique AWB</th>
+<td id="actualCount">0</td>
+</tr>
+
+</table>
+</div>
+
+</div>
+<button onclick="downloadDuplicates()">Download Duplicate AWB</button>
 
       <div class="g2">
         <!-- LOSS FILE -->
@@ -1390,7 +1707,88 @@ function renderRCAHistory(){
 function pendingRCAData(){
   return ALL_DATA.filter(r=>!r._rca).map(r=>({AWB:r.awb,Date:r.actual_lost_date,Location:r.location,'Cluster Head':r['Cluster Head'],Zone:r.Zone,'Loss Value':Math.round(r.loss_value),'Reason L1':r.reason_l1,Type:r.current_movement_type}));
 }
+function renderAttribution(){
 
+let yes=0
+let no=0
+
+let before=0
+let after=0
+
+const zone={}
+const rh={}
+const ch={}
+const loc={}
+const trend={}
+
+ALL_DATA.forEach(r=>{
+
+let val=(r.attribution_changed||'').toLowerCase()
+
+if(val==='yes') yes++
+else no++
+
+const z=r.Zone||'Unknown'
+const rH=r['Regional Head']||'Unknown'
+const c=r['Cluster Head']||'Unknown'
+const l=r.location||'Unknown'
+const m=r.Month||'Unknown'
+
+if(!zone[z]) zone[z]={yes:0,no:0}
+if(!rh[rH]) rh[rH]={yes:0,no:0}
+if(!ch[c]) ch[c]={yes:0,no:0}
+if(!loc[l]) loc[l]={yes:0,no:0}
+if(!trend[m]) trend[m]={yes:0,no:0}
+
+if(val==='yes'){
+
+zone[z].yes++
+rh[rH].yes++
+ch[c].yes++
+loc[l].yes++
+trend[m].yes++
+
+before+=Number(r.loss_value_before||0)
+after+=Number(r.loss_value_after||0)
+
+}else{
+
+zone[z].no++
+rh[rH].no++
+ch[c].no++
+loc[l].no++
+trend[m].no++
+
+}
+
+})
+
+
+document.getElementById("attTotal").innerText=ALL_DATA.length
+document.getElementById("attYes").innerText=yes
+document.getElementById("attNo").innerText=no
+
+document.getElementById("attPct").innerText=
+((yes/ALL_DATA.length)*100).toFixed(1)+'%'
+
+
+document.getElementById("lossBefore").innerText=before.toLocaleString()
+document.getElementById("lossAfter").innerText=after.toLocaleString()
+
+document.getElementById("lossImpact").innerText=
+(after-before).toLocaleString()
+
+
+makeChart("chartAttrZone",zone)
+makeChart("chartAttrRH",rh)
+makeChart("chartAttrCluster",ch)
+makeChart("chartAttrLocation",loc)
+makeChart("chartAttrTrend",trend)
+
+
+renderLossChart(before,after)
+
+}
 // ═══════════════════════════════════════════════
 // PERFORMANCE TAB
 // ═══════════════════════════════════════════════
