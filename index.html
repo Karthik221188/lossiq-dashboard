@@ -1241,8 +1241,8 @@ function renderRanking(){
   setEl('rankFwdRto',mkFRCard('Forward Losses',fwdD,'fwd','var(--blue)')+mkFRCard('RTO Losses',rtoD,'rto','var(--orange)'));
 
   // ② ZONE
-  const zStats=buildStats(d,'Zone');
-  setEl('zoneRankTbl',rankTbl(zStats,999));
+const zStats=buildStats(d,'Zone').sort((a,b)=>a.loss-b.loss);
+setEl('zoneRankTbl',rankTbl(zStats,999));
   rankBarChart('chartZoneRankLoss',zStats,zStats.length,false);
   mkChart('chartZoneRankAWB',{type:'bar',data:{labels:zStats.map(r=>r.name),datasets:[
     {label:'FWD',data:zStats.map(r=>r.fwdN),backgroundColor:'rgba(59,130,246,.8)',stack:'s'},
@@ -1253,8 +1253,8 @@ function renderRanking(){
   });
 
   // ③ REGIONAL HEAD
-  const rhStats=buildStats(d,'Regional Head');
-  setEl('rhRankTbl',rankTbl(rhStats,999));
+const rhStats=buildStats(d,'Regional Head').sort((a,b)=>a.loss-b.loss);
+setEl('rhRankTbl',rankTbl(rhStats,999));
   rankBarChart('chartRHLoss',rhStats,rhStats.length,false);
   mkChart('chartRHAWB',{type:'bar',data:{labels:rhStats.map(r=>r.name),datasets:[
     {label:'FWD',data:rhStats.map(r=>r.fwdN),backgroundColor:'rgba(59,130,246,.8)',stack:'s'},
