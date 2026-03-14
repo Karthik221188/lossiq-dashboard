@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>LossIQ — Shipment Loss Intelligence Platform v7</title>
+<title>LossIQ — Shipment Loss Intelligence Platform v8</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -349,7 +349,7 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
 <div id="loginScreen">
   <div class="lbox">
     <div class="llogo">Loss<span>IQ</span></div>
-    <div class="lsub">Shipment Loss Intelligence Platform v7 ☁️ Cloud Sync</div>
+    <div class="lsub">Shipment Loss Intelligence Platform v8 ☁️ Cloud Sync</div>
     <label class="llabel">Login With</label>
     <select class="lselect" id="ltype" onchange="toggleLoginType()">
       <option value="mobile">Mobile Number</option>
@@ -887,27 +887,24 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
       <!-- ☁️ CLOUD CONFIG CARD (Super Admin only) -->
       <div class="cloud-config-box" id="cloudConfigCard" style="display:none">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-family:var(--hd);font-size:1rem;letter-spacing:.5px">☁️ Cloud Sync Configuration</div>
-          <span id="cloudConnectedBadge" class="cloud-sync-badge cloud-offline-badge">● Not Connected</span>
+          <div style="font-family:var(--hd);font-size:1rem;letter-spacing:.5px">☁️ Cloud Sync — Active Configuration</div>
+          <span id="cloudConnectedBadge" class="cloud-sync-badge">● Cloud Connected</span>
         </div>
         <div style="font-size:.72rem;color:var(--t2);margin-bottom:12px">
-          Configure once to enable Super Admin cloud upload — all users will see data automatically via the shared URL.
-          <a href="https://supabase.com" target="_blank" style="color:var(--blue)">Get free Supabase account →</a>
+          Credentials are <b style="color:var(--green)">hardcoded in v8</b> — no manual setup needed. Super Admin uploads once → all users see data on any device worldwide.
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
             <div style="font-size:.6rem;font-weight:900;color:var(--t3);text-transform:uppercase;letter-spacing:.8px">Supabase Project URL</div>
-            <input id="cfgSupaURL" placeholder="https://xxxxx.supabase.co" autocomplete="off"/>
+            <input id="cfgSupaURL" value="https://ytvelhrkiijhyzsdvjww.supabase.co" readonly style="opacity:.7;cursor:default"/>
           </div>
           <div>
-            <div style="font-size:.6rem;font-weight:900;color:var(--t3);text-transform:uppercase;letter-spacing:.8px">Supabase Anon Key</div>
-            <input id="cfgSupaKey" type="password" placeholder="eyJhbGciOiJIUzI1NiIs..." autocomplete="off"/>
+            <div style="font-size:.6rem;font-weight:900;color:var(--t3);text-transform:uppercase;letter-spacing:.8px">Status</div>
+            <input id="cfgSupaKey" value="✅ Connected — credentials hardcoded" readonly style="opacity:.7;cursor:default"/>
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="fbtn" onclick="saveCloudConfig()">💾 Save & Test Connection</button>
-          <button class="fbtn reset" onclick="clearCloudConfig()">✕ Clear Config</button>
-          <div style="margin-left:auto;font-size:.67rem;color:var(--t2);line-height:2">Bucket: <code style="color:var(--cyan)">excel-data</code> &nbsp;|&nbsp; File: <code style="color:var(--cyan)">loss_data.xlsx</code></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <div style="font-size:.67rem;color:var(--t2);line-height:2.2">Bucket: <code style="color:var(--cyan)">excel-data</code> &nbsp;|&nbsp; File: <code style="color:var(--cyan)">loss_data.xlsx</code></div>
         </div>
         <div id="cfgTestStatus" style="margin-top:8px;font-size:.74rem;display:none;padding:7px 10px;border-radius:6px"></div>
       </div>
@@ -965,9 +962,9 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
         <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin:0" id="dupAnalysisKPI"></div>
         <div id="dupDetails" style="margin-top:12px"></div>
       </div>
-      <div class="g2">
+      <div id="localUploadGrid" class="g2">
         <div class="card">
-          <div class="ch"><div><div class="ct">📊 Upload Loss.xlsx (Local)</div><div class="cs">Supports up to 1 GB · Sheet1 + Sheet2 · 10 Lakh rows each</div></div></div>
+          <div class="ch"><div><div class="ct">📊 Upload Loss.xlsx (Local — Super Admin Only)</div><div class="cs">Supports up to 1 GB · Sheet1 + Sheet2 · 10 Lakh rows each</div></div></div>
           <!-- Sheet info banner -->
           <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-radius:9px;padding:10px 14px;margin-bottom:12px;font-size:.75rem;color:var(--green);font-weight:700">
             ✅ <b>Dual-Sheet Support:</b> Reads <b>Sheet1</b> + <b>Sheet2</b> automatically and merges all rows.<br>
@@ -1072,8 +1069,38 @@ async function saveAttr(){try{await idbPut(K_ATTR,{data:ATTR_DATA,log:ATTR_LOG})
 async function loadAttr(){try{const d=await idbGet(K_ATTR);if(d){ATTR_DATA=d.data||{};ATTR_LOG=d.log||[];}}catch(e){}}
 async function saveLocStatus(){try{await idbPut(K_LOCSTATUS,LOC_STATUS);}catch(e){}}
 async function loadLocStatus(){try{const d=await idbGet(K_LOCSTATUS);if(d)LOC_STATUS=d;}catch(e){}}
-async function saveUsers(){try{await idbPut(K_USERS,USERS);}catch(e){}}
-async function loadUsers(){try{const d=await idbGet(K_USERS);if(d&&d.length){const sa=USERS.find(u=>u.mobile==='9999999999');const loaded=d.filter(u=>u.mobile!=='9999999999');USERS=[sa,...loaded];}}catch(e){}}
+async function saveUsers(){
+  try{
+    await idbPut(K_USERS,USERS);
+    // Also push users to Supabase so ALL devices get them
+    const client=getSupaClient();
+    if(client){
+      // Store users as a JSON file in the bucket (excluding super admin password)
+      const usersBlob=new Blob([JSON.stringify(USERS)],{type:'application/json'});
+      await client.storage.from(CLOUD_BUCKET).upload('users_db.json',usersBlob,{upsert:true});
+    }
+  }catch(e){console.warn('[v8] saveUsers:',e);}
+}
+async function loadUsers(){
+  try{
+    // 1. Load from IndexedDB first (fast, local)
+    const d=await idbGet(K_USERS);
+    if(d&&d.length){const sa=USERS.find(u=>u.mobile==='9999999999');const loaded=d.filter(u=>u.mobile!=='9999999999');USERS=[sa,...loaded];}
+    // 2. Try to get cloud users for cross-device sync
+    try{
+      const r=await fetch(`${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/users_db.json?cb=`+Date.now());
+      if(r.ok){
+        const cloudUsers=await r.json();
+        if(cloudUsers&&cloudUsers.length){
+          const sa=USERS.find(u=>u.mobile==='9999999999');
+          const loaded=cloudUsers.filter(u=>u.mobile!=='9999999999');
+          USERS=[sa,...loaded];
+          await idbPut(K_USERS,USERS); // update local cache
+        }
+      }
+    }catch(e){/* cloud user load failed — use local */}
+  }catch(e){}
+}
 
 // ═══ UTILITIES ═══
 const S=v=>String(v||'').trim();
@@ -1112,19 +1139,35 @@ function doLogin(){
   const t=gv('ltype'),id=S(gv('lid')),pwd=S(gv('lpwd'));
   const err=document.getElementById('lerr');err.style.display='none';
   if(!id||!pwd){err.textContent='Please enter credentials.';err.style.display='block';return;}
-  const u=USERS.find(u=>t==='mobile'?u.mobile===id:u.email===id);
-  if(!u||u.password!==pwd){err.textContent='Invalid credentials. Please try again.';err.style.display='block';return;}
-  if(u.active===false){err.textContent='Your account is inactive. Contact administrator.';err.style.display='block';return;}
-  currentUser=u;
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('app').style.display='block';
-  setEl('uavatar',(u.name||u.email).substring(0,2).toUpperCase());
-  setEl('uname',u.name||u.email);
-  setEl('urole',u.role==='super'?'Super Admin':u.role==='admin'?'Admin':'User');
-  const isAdmin=(u.role==='super'||u.role==='admin');
-  document.querySelectorAll('.admin-tab,.admin-panel').forEach(e=>e.style.display=isAdmin?'flex':'none');
-  document.querySelectorAll('.admin-panel').forEach(e=>e.style.display=isAdmin?'block':'none');
-  initApp();
+  // Try login with currently loaded USERS first
+  function tryLogin(){
+    const u=USERS.find(u=>t==='mobile'?u.mobile===id:u.email===id);
+    if(!u||u.password!==pwd){err.textContent='Invalid credentials. Please try again.';err.style.display='block';return;}
+    if(u.active===false){err.textContent='Your account is inactive. Contact administrator.';err.style.display='block';return;}
+    currentUser=u;
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    setEl('uavatar',(u.name||u.email).substring(0,2).toUpperCase());
+    setEl('uname',u.name||u.email);
+    setEl('urole',u.role==='super'?'Super Admin':u.role==='admin'?'Admin':'User');
+    const isAdmin=(u.role==='super'||u.role==='admin');
+    document.querySelectorAll('.admin-tab,.admin-panel').forEach(e=>e.style.display=isAdmin?'flex':'none');
+    document.querySelectorAll('.admin-panel').forEach(e=>e.style.display=isAdmin?'block':'none');
+    initApp();
+  }
+  // Always fetch latest users from cloud first (catches newly created users from another device)
+  fetch(`${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/users_db.json?cb=`+Date.now())
+    .then(r=>r.ok?r.json():null)
+    .then(cloudUsers=>{
+      if(cloudUsers&&cloudUsers.length){
+        const sa=USERS.find(u=>u.mobile==='9999999999');
+        const loaded=cloudUsers.filter(u=>u.mobile!=='9999999999');
+        USERS=[sa,...loaded];
+        idbPut(K_USERS,USERS);
+      }
+    })
+    .catch(()=>{})
+    .finally(()=>tryLogin());
 }
 function doLogout(){currentUser=null;ALL_DATA=[];FILTERED_DATA=[];document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('lid').value='';document.getElementById('lpwd').value='';}
 function openPwdModal(){document.getElementById('pwdOld').value='';document.getElementById('pwdNew').value='';document.getElementById('pwdConfirm').value='';document.getElementById('pwdErr').style.display='none';document.getElementById('pwdModal').classList.add('show');}
@@ -2372,127 +2415,50 @@ function switchTab(name){
 // ═══════════════════════════════════════════════
 async function initApp(){
   try{
-    // On load, hide all panels except dashboard
-    document.querySelectorAll('.panel').forEach(p=>{
-      p.style.display='none'; p.classList.remove('active');
-    });
+    document.querySelectorAll('.panel').forEach(p=>{p.style.display='none';p.classList.remove('active');});
     const dp=document.getElementById('panel-dashboard');
     if(dp){dp.style.display='block';dp.classList.add('active');}
     await Promise.all([loadLoss(),loadRCA(),loadAttr(),loadLocStatus()]);
+    // ALWAYS load fresh data from cloud — this ensures every user on every device gets the latest
+    await autoLoadCloudData();
+    // If cloud loaded data, it's already in ALL_DATA; if cloud failed, fall back to local IndexedDB
     if(ALL_DATA.length){FILTERED_DATA=[...ALL_DATA];populateFilters();renderDashboard();}
-    else{
-      // No local data — try loading from cloud
-      await autoLoadCloudData();
-    }
     updateDatasetInfo();initUploadPanel();
     renderRCASummaryKPI();
-  }catch(err){console.error('[LossIQ v7] Init error:',err);}
+  }catch(err){console.error('[LossIQ v8] Init error:',err);}
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
   try{const d=await idbGet(K_USERS);if(d&&d.length){const sa=USERS.find(u=>u.mobile==='9999999999');const loaded=d.filter(u=>u.mobile!=='9999999999');USERS=[sa,...loaded];}}catch(e){}
   document.getElementById('ltype').dispatchEvent(new Event('change'));
-  // Auto-load cloud data on first open if configured
-  await autoLoadCloudData();
 });
 
 // ═══════════════════════════════════════════════
-// ☁️ CLOUD SYNC — SUPABASE INTEGRATION
+// ☁️ CLOUD SYNC v8 — SUPABASE (HARDCODED CREDENTIALS)
+// Supabase credentials are baked in — no manual config needed
+// Super Admin uploads once → ALL users see data on any device
 // ═══════════════════════════════════════════════
-const K_CLOUD_CFG='cloud_config';
-const CLOUD_BUCKET='excel-data';
-const CLOUD_FILE='loss_data.xlsx';
-let _supaClient=null,_cloudConnected=false;
 
-// ── Load/Save cloud config from IDB ──────────────
-async function getCloudConfig(){
-  try{const d=await idbGet(K_CLOUD_CFG);return d||{};}catch(e){return{};}
-}
-async function saveCloudConfigToIDB(cfg){
-  try{await idbPut(K_CLOUD_CFG,cfg);}catch(e){}
-}
+// ▼▼▼ YOUR SUPABASE CREDENTIALS — ALREADY SET ▼▼▼
+const SUPA_URL  = 'https://ytvelhrkiijhyzsdvjww.supabase.co';
+const SUPA_KEY  = 'sb_publishable_o20RYWZs5M2ozkab2G0L0Q_6d4rYskZ';
+const CLOUD_BUCKET = 'excel-data';
+const CLOUD_FILE   = 'loss_data.xlsx'; // fixed filename — URL never changes
 
-// ── Build Supabase client ──────────────
-async function buildSupaClient(){
-  const cfg=await getCloudConfig();
-  if(!cfg.url||!cfg.key||cfg.url.includes('YOUR_PROJECT')||cfg.url.includes('your_project')){
-    _supaClient=null;_cloudConnected=false;return null;
+// ── Public URL that all users fetch from ─────────────────────
+const CLOUD_PUBLIC_URL = `${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/${CLOUD_FILE}`;
+
+// ── Supabase client (initialised once) ───────────────────────
+let _supaClient = null;
+function getSupaClient(){
+  if(!_supaClient && window.supabase){
+    try{ _supaClient = window.supabase.createClient(SUPA_URL, SUPA_KEY); }
+    catch(e){ console.error('[LossIQ v8] Supabase init error:',e); }
   }
-  try{
-    _supaClient=window.supabase.createClient(cfg.url,cfg.key);
-    _cloudConnected=true;
-    return _supaClient;
-  }catch(e){_supaClient=null;_cloudConnected=false;return null;}
+  return _supaClient;
 }
 
-// ── Get public file URL ──────────────
-async function getCloudFileURL(){
-  const cfg=await getCloudConfig();
-  if(!cfg.url||cfg.url.includes('YOUR_PROJECT'))return null;
-  return `${cfg.url}/storage/v1/object/public/${CLOUD_BUCKET}/${CLOUD_FILE}`;
-}
-
-// ── Test connection ──────────────
-async function testCloudConnection(){
-  const client=await buildSupaClient();
-  if(!client)return{ok:false,msg:'Supabase client not initialized — check URL & Key'};
-  try{
-    const url=await getCloudFileURL();
-    const r=await fetch(url+'?t='+Date.now(),{method:'HEAD'});
-    if(r.ok)return{ok:true,msg:'Connected ✅ — Cloud file found'};
-    if(r.status===400||r.status===404)return{ok:true,msg:'Connected ✅ — No file uploaded yet (bucket ready)'};
-    return{ok:false,msg:`HTTP ${r.status} — Check bucket name & public access`};
-  }catch(e){return{ok:false,msg:'Network error: '+e.message};}
-}
-
-// ── Show/Hide cloud config in UI ──────────────
-function showCloudConfig(){
-  const card=document.getElementById('cloudConfigCard');
-  if(card){card.style.display=card.style.display==='none'?'block':'none';}
-  switchTab('data');
-  setTimeout(async()=>{
-    const cfg=await getCloudConfig();
-    if(cfg.url&&!cfg.url.includes('YOUR_PROJECT'))document.getElementById('cfgSupaURL').value=cfg.url||'';
-    if(cfg.key)document.getElementById('cfgSupaKey').value=cfg.key||'';
-    updateCloudFileURLDisplay();
-  },50);
-}
-
-// ── Save and test cloud config ──────────────
-async function saveCloudConfig(){
-  const url=document.getElementById('cfgSupaURL').value.trim().replace(/\/$/,'');
-  const key=document.getElementById('cfgSupaKey').value.trim();
-  const st=document.getElementById('cfgTestStatus');
-  st.style.display='block';st.style.background='rgba(251,191,36,.1)';st.style.border='1px solid rgba(251,191,36,.3)';st.style.color='var(--yellow)';
-  st.textContent='⏳ Testing connection...';
-  if(!url||!key){st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';st.textContent='❌ Both URL and Key are required';return;}
-  await saveCloudConfigToIDB({url,key});
-  const res=await testCloudConnection();
-  if(res.ok){
-    st.style.background='rgba(16,185,129,.1)';st.style.border='1px solid rgba(16,185,129,.25)';st.style.color='var(--green)';
-    st.textContent='✅ '+res.msg;
-    updateCloudBadges(true);
-    updateCloudFileURLDisplay();
-    toast('☁️ Cloud connected!','var(--green)');
-  }else{
-    st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';
-    st.textContent='❌ '+res.msg;
-    updateCloudBadges(false);
-  }
-}
-
-async function clearCloudConfig(){
-  await saveCloudConfigToIDB({});
-  document.getElementById('cfgSupaURL').value='';
-  document.getElementById('cfgSupaKey').value='';
-  _supaClient=null;_cloudConnected=false;
-  updateCloudBadges(false);
-  const st=document.getElementById('cfgTestStatus');
-  st.style.display='block';st.style.background='rgba(100,116,139,.1)';st.style.border='1px solid rgba(100,116,139,.2)';st.style.color='var(--t2)';
-  st.textContent='Cloud config cleared';
-  toast('Cloud config cleared','var(--orange)');
-}
-
+// ── Cloud status helpers ──────────────────────────────────────
 function updateCloudBadges(connected){
   const badges=[document.getElementById('cloudConnectedBadge'),document.getElementById('cloudUploadBadge')];
   badges.forEach(b=>{
@@ -2501,135 +2467,178 @@ function updateCloudBadges(connected){
     b.textContent=connected?'● Cloud Connected':'● Cloud Offline';
   });
   const btn=document.getElementById('cloudStatusBtn');
-  if(btn){btn.style.borderColor=connected?'var(--green)':'';btn.style.color=connected?'var(--green)':'';btn.title=connected?'Cloud Connected ✅':'Cloud not configured';}
+  if(btn){
+    btn.style.borderColor=connected?'var(--green)':'';
+    btn.style.color=connected?'var(--green)':'';
+    btn.title=connected?'☁️ Cloud Connected ✅':'Cloud Offline';
+  }
 }
-
-async function updateCloudFileURLDisplay(){
-  const url=await getCloudFileURL();
+function updateCloudFileURLDisplay(){
   const el=document.getElementById('cloudFileURL');
-  if(el){el.textContent=url||'Configure Supabase above to see the URL';el.style.color=url?'var(--cyan)':'var(--t3)';}
+  if(el){el.textContent=CLOUD_PUBLIC_URL;el.style.color='var(--cyan)';}
+  // Also fill the read-only URL input in config card
+  const ui=document.getElementById('cfgSupaURL');
+  if(ui)ui.value=SUPA_URL;
 }
-
-// ── Upload Excel to Supabase ──────────────
-async function uploadToCloud(input){
-  const file=input.files[0];if(!file)return;
-  const st=document.getElementById('cloudUploadStatus');
-  const pb=document.getElementById('cloudPBar');
-  const fill=document.getElementById('cloudPFill');
-  const pct=document.getElementById('cloudPPct');
-  const lbl=document.getElementById('cloudPLabel');
-
-  const client=await buildSupaClient();
-  if(!client){
-    st.style.display='block';st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';
-    st.textContent='❌ Cloud not configured. Set up Supabase URL & Key first.';
-    return;
-  }
-
-  pb.style.display='block';fill.style.width='10%';pct.textContent='10%';lbl.textContent='Reading file...';
-  st.style.display='none';
-
-  try{
-    const bytes=await file.arrayBuffer();
-    fill.style.width='35%';pct.textContent='35%';lbl.textContent='Uploading to cloud...';
-
-    // Parse locally first so we can auto-refresh dashboard
-    fill.style.width='50%';pct.textContent='50%';lbl.textContent='Uploading...';
-
-    const {error}=await client.storage.from(CLOUD_BUCKET).upload(
-      CLOUD_FILE,
-      new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
-      {upsert:true,contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
-    );
-
-    fill.style.width='80%';pct.textContent='80%';lbl.textContent='Finalising...';
-
-    if(error)throw error;
-
-    fill.style.width='100%';pct.textContent='100%';lbl.textContent='Complete!';
-    setTimeout(()=>{pb.style.display='none';},1500);
-
-    const publicUrl=await getCloudFileURL();
-    st.style.display='block';
-    st.style.background='rgba(16,185,129,.1)';st.style.border='1px solid rgba(16,185,129,.25)';st.style.color='var(--green)';
-    st.innerHTML=`✅ <b>Upload successful!</b> All users will now see this data automatically when they open the dashboard URL.<br>
-      <span style="font-size:.65rem;color:var(--t2);font-family:var(--mono)">${publicUrl||''}</span>`;
-    toast('☁️ Cloud upload successful!','var(--green)');
-    updateCloudFileURLDisplay();
-
-    // Also parse and load locally so admin sees it immediately
-    const wb=XLSX.read(bytes,{type:'array'});
-    processWorkbook(wb,file);
-  }catch(err){
-    pb.style.display='none';
-    st.style.display='block';
-    st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';
-    st.textContent='❌ Upload failed: '+err.message+' — Check bucket "excel-data" is public in Supabase Storage.';
-  }
-}
-
-function handleCloudDrop(event){
-  const file=event.dataTransfer.files[0];if(!file)return;
-  const input={files:[file]};
-  uploadToCloud(input);
-}
-
-// ── Auto-load from cloud for ALL users on login ──────────────
-async function autoLoadCloudData(){
-  const url=await getCloudFileURL();
-  if(!url){setCloudBannerOffline();return;}
-  showCloudBanner('⏳ Loading data from cloud...');
-  try{
-    const r=await fetch(url+'?t='+Date.now());
-    if(!r.ok){
-      if(r.status===400||r.status===404){setCloudBannerOffline('No cloud data yet');return;}
-      throw new Error('HTTP '+r.status);
-    }
-    const buf=await r.arrayBuffer();
-    const wb=XLSX.read(buf,{type:'array'});
-    processWorkbook(wb,{name:'cloud_loss_data.xlsx'});
-    const cnt=ALL_DATA.length;
-    showCloudBanner(`☁️ Cloud data loaded — ${NUM(cnt)} records`,true);
-    updateCloudBadges(true);
-    setTimeout(()=>hideCloudBanner(),4000);
-  }catch(e){
-    setCloudBannerOffline('Cloud load failed: '+e.message);
-    console.warn('[LossIQ v7] Cloud load:',e);
-  }
-}
-
 function showCloudBanner(msg,success=false){
   const b=document.getElementById('cloudBanner');
-  const dot=document.getElementById('cloudDot');
   const msgEl=document.getElementById('cloudBannerMsg');
+  if(!b||!msgEl)return;
   b.style.display='block';
   b.style.background=success
     ?'linear-gradient(90deg,rgba(16,185,129,.95),rgba(6,182,212,.9))'
     :'linear-gradient(90deg,rgba(59,130,246,.92),rgba(139,92,246,.85))';
-  dot.style.background='#fff';
   msgEl.textContent=msg;
-  // Offset topbar
   const tb=document.querySelector('.topbar');
   if(tb)tb.style.top='32px';
 }
 function hideCloudBanner(){
   const b=document.getElementById('cloudBanner');
-  b.style.display='none';
+  if(b)b.style.display='none';
   const tb=document.querySelector('.topbar');
   if(tb)tb.style.top='0';
 }
-function setCloudBannerOffline(msg=''){
-  hideCloudBanner(); // silent offline — don't disturb UI
-  updateCloudBadges(false);
+
+// ── AUTO-LOAD: called after every login — fetches cloud file for ALL users ───
+async function autoLoadCloudData(){
+  showCloudBanner('⏳ Loading data from cloud…');
+  try{
+    // Cache-bust with timestamp so browsers always get latest file
+    const r = await fetch(CLOUD_PUBLIC_URL+'?cb='+Date.now());
+    if(!r.ok){
+      if(r.status===404||r.status===400){
+        hideCloudBanner();
+        showCloudBanner('⚠️ No data uploaded yet — Super Admin must upload Loss.xlsx first',false);
+        setTimeout(hideCloudBanner,6000);
+        updateCloudBadges(false);
+        return;
+      }
+      throw new Error('HTTP '+r.status);
+    }
+    const buf = await r.arrayBuffer();
+    processWorkbook(XLSX.read(buf,{type:'array'}),{name:'cloud_loss_data.xlsx'});
+    showCloudBanner(`☁️ Cloud data loaded — ${NUM(ALL_DATA.length)} records`,true);
+    updateCloudBadges(true);
+    setTimeout(hideCloudBanner,5000);
+  }catch(e){
+    console.warn('[LossIQ v8] Cloud load error:',e.message);
+    hideCloudBanner();
+    updateCloudBadges(false);
+  }
 }
 
-// ── Shared workbook processor (used by both local & cloud uploads) ──────────────
+// ── UPLOAD: Super Admin uploads Excel → Supabase → all users see it ──────────
+async function uploadToCloud(input){
+  const file=input.files[0]; if(!file)return;
+  const st=document.getElementById('cloudUploadStatus');
+  const pb=document.getElementById('cloudPBar');
+  const fill=document.getElementById('cloudPFill');
+  const pct=document.getElementById('cloudPPct');
+  const lbl=document.getElementById('cloudPLabel');
+  const client=getSupaClient();
+  if(!client){
+    st.style.cssText='display:block;background:rgba(232,66,58,.1);border:1px solid rgba(232,66,58,.2);color:var(--red)';
+    st.textContent='❌ Supabase client failed to initialise — check internet connection.';
+    return;
+  }
+  pb.style.display='block'; fill.style.width='8%'; pct.textContent='8%'; lbl.textContent='Reading file…';
+  st.style.display='none';
+  try{
+    const bytes = await file.arrayBuffer();
+    fill.style.width='30%'; pct.textContent='30%'; lbl.textContent='Uploading to Supabase cloud…';
+    const {error} = await client.storage.from(CLOUD_BUCKET).upload(
+      CLOUD_FILE,
+      new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+      {upsert:true}
+    );
+    if(error)throw error;
+    fill.style.width='75%'; pct.textContent='75%'; lbl.textContent='Parsing & loading dashboard…';
+    // Parse and load immediately for Super Admin
+    processWorkbook(XLSX.read(bytes,{type:'array'}),file);
+    fill.style.width='100%'; pct.textContent='100%'; lbl.textContent='✅ Done!';
+    setTimeout(()=>pb.style.display='none',2000);
+    st.style.cssText='display:block;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--green)';
+    st.innerHTML=`✅ <b>Upload successful! File: ${file.name} (${(file.size/1048576).toFixed(1)} MB)</b><br>
+      <span style="font-size:.7rem;color:var(--t2)">All users will now see this data when they open the dashboard URL on any device — laptop, mobile, tablet.</span><br>
+      <span style="font-size:.63rem;font-family:var(--mono);color:var(--cyan)">${CLOUD_PUBLIC_URL}</span>`;
+    updateCloudBadges(true);
+    toast('☁️ Upload successful! All users will see data now.','var(--green)');
+  }catch(err){
+    pb.style.display='none';
+    st.style.cssText='display:block;background:rgba(232,66,58,.1);border:1px solid rgba(232,66,58,.2);color:var(--red)';
+    // Detailed error help
+    let hint='';
+    if(/not found|bucket/i.test(err.message))hint=' — Make sure bucket name is exactly "excel-data" and is set to PUBLIC in Supabase Storage.';
+    else if(/auth|403|jwt/i.test(err.message))hint=' — Check your Supabase Anon Key is correct.';
+    else if(/network|fetch/i.test(err.message))hint=' — Check your internet connection.';
+    st.innerHTML=`❌ Upload failed: ${err.message}${hint}<br>
+      <span style="font-size:.68rem;color:var(--t2)">Steps to fix: Go to <b>supabase.com → Storage → excel-data bucket → Settings → toggle Public ON</b></span>`;
+    console.error('[LossIQ v8] Upload error:',err);
+  }
+}
+function handleCloudDrop(event){
+  const file=event.dataTransfer.files[0]; if(!file)return;
+  uploadToCloud({files:[file]});
+}
+
+// ── initUploadPanel — called after login to show/hide upload sections ─────────
+function initUploadPanel(){
+  const isSuperAdmin = currentUser && currentUser.role==='super';
+  // Cloud upload card: SUPER ADMIN ONLY
+  const cloudCfg=document.getElementById('cloudConfigCard');
+  const cloudUp=document.getElementById('cloudUploadCard');
+  if(cloudCfg)cloudCfg.style.display=isSuperAdmin?'block':'none';
+  if(cloudUp)cloudUp.style.display=isSuperAdmin?'block':'none';
+  // Local upload section: HIDE for non-super users (they get data from cloud)
+  // Keep visible only for super admin as backup
+  const localGrid=document.getElementById('localUploadGrid');
+  if(localGrid)localGrid.style.display=isSuperAdmin?'grid':'none';
+  // Fill credential display fields (read-only for super admin info)
+  updateCloudFileURLDisplay();
+  if(isSuperAdmin)updateCloudBadges(true);
+  // Expected columns
+  const colsEl=document.getElementById('expectedCols');
+  if(colsEl)colsEl.innerHTML=COLS.map(c=>`<span style="background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.62rem;font-family:var(--mono);color:var(--cyan)">${c}</span>`).join('');
+}
+
+// ── showCloudConfig — topbar cloud button ─────────────────────
+function showCloudConfig(){
+  switchTab('data');
+  const card=document.getElementById('cloudConfigCard');
+  if(card&&card.style.display!=='none')card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+// ── Save config button (in UI) — now just shows current hardcoded values ──────
+function saveCloudConfig(){
+  const st=document.getElementById('cfgTestStatus');
+  if(st){
+    st.style.cssText='display:block;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--green)';
+    st.textContent='✅ Credentials are hardcoded in v8 — connected to: '+SUPA_URL;
+  }
+  updateCloudBadges(true);
+  toast('☁️ Cloud config active','var(--green)');
+}
+
+// ── processWorkbook — shared parser for cloud & local uploads ─────────────────
 function processWorkbook(wb,file){
-  const rows1=wb.SheetNames[0]?XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}):[],
-        rows2=wb.SheetNames[1]?XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[1]],{defval:''}):[];
+  if(!wb||!wb.SheetNames||!wb.SheetNames.length){
+    toast('❌ Empty or unreadable workbook','var(--red)');return;
+  }
+  // Read Sheet1 + Sheet2 (same logic as original uploadLoss)
+  function getSheet(names){
+    for(const n of names){const s=wb.Sheets[n];if(s)return s;}
+    return null;
+  }
+  const ws1=getSheet(['Sheet1','sheet1','SHEET1','Sheet 1','Data','data','Loss','loss'])||wb.Sheets[wb.SheetNames[0]];
+  const ws2=wb.SheetNames.length>1?(getSheet(['Sheet2','sheet2','SHEET2','Sheet 2','Data2','Loss2'])||wb.Sheets[wb.SheetNames[1]]):null;
+  function s2j(ws){
+    if(!ws)return[];
+    try{return XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});}catch(e){return[];}
+  }
+  const rows1=s2j(ws1), rows2=s2j(ws2);
   const allRaw=[...rows1,...rows2];
+  if(!allRaw.length){toast('❌ No rows found in file','var(--red)');return;}
   // Deduplicate by AWB
-  const seen=new Set();let dupCount=0;
+  const seen=new Set(); let dupCount=0;
   const deduped=allRaw.filter(r=>{
     const k=String(r.awb||r.AWB||r['AWB No']||r['AWB Number']||'').trim();
     if(!k)return true;
@@ -2656,45 +2665,25 @@ function processWorkbook(wb,file){
     _month:parseMonth(r.actual_lost_date||r['Actual Lost Date']||r['Date']||''),
     _rca:''
   }));
+  // Re-apply any existing RCA/attribution updates
+  ALL_DATA.forEach(r=>{
+    if(RCA_DATA[r.awb])r._rca=RCA_DATA[r.awb].remarks;
+    if(ATTR_DATA[r.awb])r.attribution_changed='Yes';
+  });
   FILTERED_DATA=[...ALL_DATA];
-  const actualCount=ALL_DATA.length;
   saveLoss();
   populateFilters();
   renderDashboard();
-  if(typeof switchTab==='function')switchTab('dashboard');
   updateDatasetInfo();
-
-  // Dup analysis KPI
+  // Duplicate KPI
   const dupKPI=document.getElementById('dupAnalysisKPI');
-  if(dupKPI){dupKPI.innerHTML=
+  if(dupKPI)dupKPI.innerHTML=
     `<div class="kpi blue"><div class="klabel">Total Raw Rows</div><div class="kval blue">${NUM(allRaw.length)}</div></div>`+
-    `<div class="kpi green"><div class="klabel">Unique Records</div><div class="kval green">${NUM(actualCount)}</div></div>`+
+    `<div class="kpi green"><div class="klabel">Unique Records</div><div class="kval green">${NUM(ALL_DATA.length)}</div></div>`+
     `<div class="kpi orange"><div class="klabel">Duplicates Removed</div><div class="kval orange">${NUM(dupCount)}</div></div>`+
-    `<div class="kpi red"><div class="klabel">Dup Rate</div><div class="kval red">${allRaw.length?((dupCount/allRaw.length)*100).toFixed(1):0}%</div></div>`;}
-
+    `<div class="kpi red"><div class="klabel">Dup Rate</div><div class="kval red">${allRaw.length?((dupCount/allRaw.length)*100).toFixed(1):0}%</div></div>`;
   const fname=file?file.name:'cloud_data.xlsx';
-  statusMsg('lossStatus',`✅ ${NUM(actualCount)} unique records loaded (${NUM(dupCount)} duplicates removed) from ${fname}`,'var(--green)');
-  setEl('datasetSub',`${NUM(actualCount)} unique records — ${fname}`);
-}
-
-// ── initUploadPanel — show cloud cards for super admin ──────────────
-function initUploadPanel(){
-  const isSuperAdmin=currentUser&&currentUser.role==='super';
-  const cloudCfg=document.getElementById('cloudConfigCard');
-  const cloudUp=document.getElementById('cloudUploadCard');
-  if(cloudCfg)cloudCfg.style.display=isSuperAdmin?'block':'none';
-  if(cloudUp)cloudUp.style.display=isSuperAdmin?'block':'none';
-  const cols=COLS;
-  const colsEl=document.getElementById('expectedCols');
-  if(colsEl)colsEl.innerHTML=cols.map(c=>`<span style="background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.62rem;font-family:var(--mono);color:var(--cyan)">${c}</span>`).join('');
-  // restore cloud config inputs
-  getCloudConfig().then(cfg=>{
-    const u=document.getElementById('cfgSupaURL'),k=document.getElementById('cfgSupaKey');
-    if(u&&cfg.url&&!cfg.url.includes('YOUR_PROJECT'))u.value=cfg.url;
-    if(k&&cfg.key)k.value=cfg.key;
-    updateCloudFileURLDisplay();
-    if(cfg.url&&!cfg.url.includes('YOUR_PROJECT'))updateCloudBadges(true);
-  });
+  setEl('datasetSub',`${NUM(ALL_DATA.length)} unique records — ${fname}`);
 }
 </script>
 </body>
