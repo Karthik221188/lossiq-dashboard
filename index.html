@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Loss Dashboard — Shipment Loss Visiblity Platform v6</title>
+<title>LossIQ — Shipment Loss Intelligence Platform v7</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -314,15 +315,41 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
 .improve-tag.good{background:rgba(16,185,129,.15);color:var(--green)}
 .improve-tag.bad{background:rgba(232,66,58,.15);color:var(--red)}
 .improve-tag.flat{background:rgba(251,191,36,.1);color:var(--yellow)}
+
+/* ── CLOUD SYNC ── */
+#cloudBanner{position:fixed;top:0;left:0;right:0;z-index:9000;display:none;
+  background:linear-gradient(90deg,rgba(16,185,129,.95),rgba(6,182,212,.9));
+  color:#fff;font-size:.72rem;font-weight:800;text-align:center;padding:7px;
+  font-family:var(--mono);letter-spacing:.3px;animation:slideDown .4s ease}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.cloud-status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.cloud-config-box{background:linear-gradient(135deg,rgba(59,130,246,.07),rgba(16,185,129,.05));
+  border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:14px;margin-bottom:14px;font-size:.78rem}
+.cloud-config-box input{width:100%;background:var(--s2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:var(--mono);
+  font-size:.8rem;outline:none;margin-top:5px;margin-bottom:10px}
+.cloud-config-box input:focus{border-color:var(--blue)}
+.cloud-sync-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,.15);
+  border:1px solid rgba(16,185,129,.3);color:var(--green);border-radius:20px;
+  padding:3px 10px;font-size:.63rem;font-weight:900}
+.cloud-offline-badge{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.3);color:var(--orange)}
 </style>
 </head>
 <body>
+
+<!-- ═══════════════ CLOUD SYNC BANNER ═══════════════ -->
+<div id="cloudBanner">
+  <span class="cloud-status-dot" id="cloudDot" style="background:#fff"></span>
+  <span id="cloudBannerMsg">☁️ Connecting to cloud...</span>
+  <span style="margin-left:12px;opacity:.7;font-size:.65rem" id="cloudBannerSub"></span>
+</div>
 
 <!-- ═══════════════ LOGIN ═══════════════ -->
 <div id="loginScreen">
   <div class="lbox">
     <div class="llogo">Loss<span>IQ</span></div>
-    <div class="lsub">Shipment Loss Intelligence Platform v4</div>
+    <div class="lsub">Shipment Loss Intelligence Platform v7 ☁️ Cloud Sync</div>
     <label class="llabel">Login With</label>
     <select class="lselect" id="ltype" onchange="toggleLoginType()">
       <option value="mobile">Mobile Number</option>
@@ -391,6 +418,7 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
         </div>
       </div>
       <button class="ibtn blue" onclick="openPwdModal()">🔒 Password</button>
+      <button class="ibtn" id="cloudStatusBtn" onclick="showCloudConfig()" title="Cloud Sync Status">☁️ Cloud</button>
       <button class="ibtn" onclick="doLogout()">⏻ Logout</button>
     </div>
   </div>
@@ -856,6 +884,71 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
 
     <!-- ═══ DATA UPLOAD ═══ -->
     <div class="panel admin-panel" id="panel-data">
+      <!-- ☁️ CLOUD CONFIG CARD (Super Admin only) -->
+      <div class="cloud-config-box" id="cloudConfigCard" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-family:var(--hd);font-size:1rem;letter-spacing:.5px">☁️ Cloud Sync Configuration</div>
+          <span id="cloudConnectedBadge" class="cloud-sync-badge cloud-offline-badge">● Not Connected</span>
+        </div>
+        <div style="font-size:.72rem;color:var(--t2);margin-bottom:12px">
+          Configure once to enable Super Admin cloud upload — all users will see data automatically via the shared URL.
+          <a href="https://supabase.com" target="_blank" style="color:var(--blue)">Get free Supabase account →</a>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="font-size:.6rem;font-weight:900;color:var(--t3);text-transform:uppercase;letter-spacing:.8px">Supabase Project URL</div>
+            <input id="cfgSupaURL" placeholder="https://xxxxx.supabase.co" autocomplete="off"/>
+          </div>
+          <div>
+            <div style="font-size:.6rem;font-weight:900;color:var(--t3);text-transform:uppercase;letter-spacing:.8px">Supabase Anon Key</div>
+            <input id="cfgSupaKey" type="password" placeholder="eyJhbGciOiJIUzI1NiIs..." autocomplete="off"/>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="fbtn" onclick="saveCloudConfig()">💾 Save & Test Connection</button>
+          <button class="fbtn reset" onclick="clearCloudConfig()">✕ Clear Config</button>
+          <div style="margin-left:auto;font-size:.67rem;color:var(--t2);line-height:2">Bucket: <code style="color:var(--cyan)">excel-data</code> &nbsp;|&nbsp; File: <code style="color:var(--cyan)">loss_data.xlsx</code></div>
+        </div>
+        <div id="cfgTestStatus" style="margin-top:8px;font-size:.74rem;display:none;padding:7px 10px;border-radius:6px"></div>
+      </div>
+
+      <!-- ☁️ SUPER ADMIN CLOUD UPLOAD -->
+      <div id="cloudUploadCard" style="display:none;margin-bottom:14px">
+        <div class="card" style="border:1px solid rgba(16,185,129,.35);border-top:2px solid var(--green)">
+          <div class="ch">
+            <div>
+              <div class="ct" style="color:var(--green)">☁️ Upload to Cloud (Super Admin)</div>
+              <div class="cs">Upload once → ALL users (admin + regular) see data instantly via the shared URL. No re-upload needed.</div>
+            </div>
+            <span id="cloudUploadBadge" class="cloud-sync-badge cloud-offline-badge">● Cloud Offline</span>
+          </div>
+          <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:9px;padding:12px;margin-bottom:12px;font-size:.74rem">
+            <b style="color:var(--green)">How it works:</b>
+            <span style="color:var(--t2)"> You upload the Excel here → File stored in Supabase cloud → All users who open this URL automatically see the latest data. No local file needed on their device.</span>
+          </div>
+          <div class="dropzone" id="cloudDZ" onclick="document.getElementById('cloudFile').click()"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="event.preventDefault();this.classList.remove('drag');handleCloudDrop(event)">
+            <div class="dz-icon">☁️</div>
+            <div class="dz-title">Upload Loss.xlsx to Cloud</div>
+            <div class="dz-sub">Overwrites existing cloud data · All users see updated data immediately</div>
+          </div>
+          <input type="file" id="cloudFile" accept=".xlsx,.xls" style="display:none" onchange="uploadToCloud(this)"/>
+          <div class="pbar-wrap" id="cloudPBar">
+            <div style="display:flex;justify-content:space-between;font-size:.67rem;color:var(--t2);margin-bottom:4px">
+              <span id="cloudPLabel">Uploading to cloud…</span><span id="cloudPPct">0%</span>
+            </div>
+            <div class="pbar-bg"><div class="pbar-fill" id="cloudPFill"></div></div>
+          </div>
+          <div class="status-msg" id="cloudUploadStatus"></div>
+          <div style="margin-top:12px;padding:10px;background:var(--s2);border-radius:8px;border:1px solid var(--border);font-size:.7rem;color:var(--t2)">
+            <b style="color:var(--cyan)">Cloud File URL:</b>
+            <div id="cloudFileURL" style="font-family:var(--mono);font-size:.65rem;word-break:break-all;margin-top:4px;color:var(--t3)">Configure Supabase above to see the URL</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card card-accent blue" style="margin-bottom:14px">
         <div class="ct" style="margin-bottom:12px;color:var(--blue)">📋 How to Upload — 2-Sheet Excel (up to 1 GB)</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
@@ -874,7 +967,7 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
       </div>
       <div class="g2">
         <div class="card">
-          <div class="ch"><div><div class="ct">📊 Upload Loss.xlsx</div><div class="cs">Supports up to 1 GB · Sheet1 + Sheet2 · 10 Lakh rows each</div></div></div>
+          <div class="ch"><div><div class="ct">📊 Upload Loss.xlsx (Local)</div><div class="cs">Supports up to 1 GB · Sheet1 + Sheet2 · 10 Lakh rows each</div></div></div>
           <!-- Sheet info banner -->
           <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-radius:9px;padding:10px 14px;margin-bottom:12px;font-size:.75rem;color:var(--green);font-weight:700">
             ✅ <b>Dual-Sheet Support:</b> Reads <b>Sheet1</b> + <b>Sheet2</b> automatically and merges all rows.<br>
@@ -2287,15 +2380,322 @@ async function initApp(){
     if(dp){dp.style.display='block';dp.classList.add('active');}
     await Promise.all([loadLoss(),loadRCA(),loadAttr(),loadLocStatus()]);
     if(ALL_DATA.length){FILTERED_DATA=[...ALL_DATA];populateFilters();renderDashboard();}
+    else{
+      // No local data — try loading from cloud
+      await autoLoadCloudData();
+    }
     updateDatasetInfo();initUploadPanel();
     renderRCASummaryKPI();
-  }catch(err){console.error('[LossIQ v5] Init error:',err);}
+  }catch(err){console.error('[LossIQ v7] Init error:',err);}
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
   try{const d=await idbGet(K_USERS);if(d&&d.length){const sa=USERS.find(u=>u.mobile==='9999999999');const loaded=d.filter(u=>u.mobile!=='9999999999');USERS=[sa,...loaded];}}catch(e){}
   document.getElementById('ltype').dispatchEvent(new Event('change'));
+  // Auto-load cloud data on first open if configured
+  await autoLoadCloudData();
 });
+
+// ═══════════════════════════════════════════════
+// ☁️ CLOUD SYNC — SUPABASE INTEGRATION
+// ═══════════════════════════════════════════════
+const K_CLOUD_CFG='cloud_config';
+const CLOUD_BUCKET='excel-data';
+const CLOUD_FILE='loss_data.xlsx';
+let _supaClient=null,_cloudConnected=false;
+
+// ── Load/Save cloud config from IDB ──────────────
+async function getCloudConfig(){
+  try{const d=await idbGet(K_CLOUD_CFG);return d||{};}catch(e){return{};}
+}
+async function saveCloudConfigToIDB(cfg){
+  try{await idbPut(K_CLOUD_CFG,cfg);}catch(e){}
+}
+
+// ── Build Supabase client ──────────────
+async function buildSupaClient(){
+  const cfg=await getCloudConfig();
+  if(!cfg.url||!cfg.key||cfg.url.includes('YOUR_PROJECT')||cfg.url.includes('your_project')){
+    _supaClient=null;_cloudConnected=false;return null;
+  }
+  try{
+    _supaClient=window.supabase.createClient(cfg.url,cfg.key);
+    _cloudConnected=true;
+    return _supaClient;
+  }catch(e){_supaClient=null;_cloudConnected=false;return null;}
+}
+
+// ── Get public file URL ──────────────
+async function getCloudFileURL(){
+  const cfg=await getCloudConfig();
+  if(!cfg.url||cfg.url.includes('YOUR_PROJECT'))return null;
+  return `${cfg.url}/storage/v1/object/public/${CLOUD_BUCKET}/${CLOUD_FILE}`;
+}
+
+// ── Test connection ──────────────
+async function testCloudConnection(){
+  const client=await buildSupaClient();
+  if(!client)return{ok:false,msg:'Supabase client not initialized — check URL & Key'};
+  try{
+    const url=await getCloudFileURL();
+    const r=await fetch(url+'?t='+Date.now(),{method:'HEAD'});
+    if(r.ok)return{ok:true,msg:'Connected ✅ — Cloud file found'};
+    if(r.status===400||r.status===404)return{ok:true,msg:'Connected ✅ — No file uploaded yet (bucket ready)'};
+    return{ok:false,msg:`HTTP ${r.status} — Check bucket name & public access`};
+  }catch(e){return{ok:false,msg:'Network error: '+e.message};}
+}
+
+// ── Show/Hide cloud config in UI ──────────────
+function showCloudConfig(){
+  const card=document.getElementById('cloudConfigCard');
+  if(card){card.style.display=card.style.display==='none'?'block':'none';}
+  switchTab('data');
+  setTimeout(async()=>{
+    const cfg=await getCloudConfig();
+    if(cfg.url&&!cfg.url.includes('YOUR_PROJECT'))document.getElementById('cfgSupaURL').value=cfg.url||'';
+    if(cfg.key)document.getElementById('cfgSupaKey').value=cfg.key||'';
+    updateCloudFileURLDisplay();
+  },50);
+}
+
+// ── Save and test cloud config ──────────────
+async function saveCloudConfig(){
+  const url=document.getElementById('cfgSupaURL').value.trim().replace(/\/$/,'');
+  const key=document.getElementById('cfgSupaKey').value.trim();
+  const st=document.getElementById('cfgTestStatus');
+  st.style.display='block';st.style.background='rgba(251,191,36,.1)';st.style.border='1px solid rgba(251,191,36,.3)';st.style.color='var(--yellow)';
+  st.textContent='⏳ Testing connection...';
+  if(!url||!key){st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';st.textContent='❌ Both URL and Key are required';return;}
+  await saveCloudConfigToIDB({url,key});
+  const res=await testCloudConnection();
+  if(res.ok){
+    st.style.background='rgba(16,185,129,.1)';st.style.border='1px solid rgba(16,185,129,.25)';st.style.color='var(--green)';
+    st.textContent='✅ '+res.msg;
+    updateCloudBadges(true);
+    updateCloudFileURLDisplay();
+    toast('☁️ Cloud connected!','var(--green)');
+  }else{
+    st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';
+    st.textContent='❌ '+res.msg;
+    updateCloudBadges(false);
+  }
+}
+
+async function clearCloudConfig(){
+  await saveCloudConfigToIDB({});
+  document.getElementById('cfgSupaURL').value='';
+  document.getElementById('cfgSupaKey').value='';
+  _supaClient=null;_cloudConnected=false;
+  updateCloudBadges(false);
+  const st=document.getElementById('cfgTestStatus');
+  st.style.display='block';st.style.background='rgba(100,116,139,.1)';st.style.border='1px solid rgba(100,116,139,.2)';st.style.color='var(--t2)';
+  st.textContent='Cloud config cleared';
+  toast('Cloud config cleared','var(--orange)');
+}
+
+function updateCloudBadges(connected){
+  const badges=[document.getElementById('cloudConnectedBadge'),document.getElementById('cloudUploadBadge')];
+  badges.forEach(b=>{
+    if(!b)return;
+    b.className='cloud-sync-badge '+(connected?'':'cloud-offline-badge');
+    b.textContent=connected?'● Cloud Connected':'● Cloud Offline';
+  });
+  const btn=document.getElementById('cloudStatusBtn');
+  if(btn){btn.style.borderColor=connected?'var(--green)':'';btn.style.color=connected?'var(--green)':'';btn.title=connected?'Cloud Connected ✅':'Cloud not configured';}
+}
+
+async function updateCloudFileURLDisplay(){
+  const url=await getCloudFileURL();
+  const el=document.getElementById('cloudFileURL');
+  if(el){el.textContent=url||'Configure Supabase above to see the URL';el.style.color=url?'var(--cyan)':'var(--t3)';}
+}
+
+// ── Upload Excel to Supabase ──────────────
+async function uploadToCloud(input){
+  const file=input.files[0];if(!file)return;
+  const st=document.getElementById('cloudUploadStatus');
+  const pb=document.getElementById('cloudPBar');
+  const fill=document.getElementById('cloudPFill');
+  const pct=document.getElementById('cloudPPct');
+  const lbl=document.getElementById('cloudPLabel');
+
+  const client=await buildSupaClient();
+  if(!client){
+    st.style.display='block';st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';
+    st.textContent='❌ Cloud not configured. Set up Supabase URL & Key first.';
+    return;
+  }
+
+  pb.style.display='block';fill.style.width='10%';pct.textContent='10%';lbl.textContent='Reading file...';
+  st.style.display='none';
+
+  try{
+    const bytes=await file.arrayBuffer();
+    fill.style.width='35%';pct.textContent='35%';lbl.textContent='Uploading to cloud...';
+
+    // Parse locally first so we can auto-refresh dashboard
+    fill.style.width='50%';pct.textContent='50%';lbl.textContent='Uploading...';
+
+    const {error}=await client.storage.from(CLOUD_BUCKET).upload(
+      CLOUD_FILE,
+      new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+      {upsert:true,contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
+    );
+
+    fill.style.width='80%';pct.textContent='80%';lbl.textContent='Finalising...';
+
+    if(error)throw error;
+
+    fill.style.width='100%';pct.textContent='100%';lbl.textContent='Complete!';
+    setTimeout(()=>{pb.style.display='none';},1500);
+
+    const publicUrl=await getCloudFileURL();
+    st.style.display='block';
+    st.style.background='rgba(16,185,129,.1)';st.style.border='1px solid rgba(16,185,129,.25)';st.style.color='var(--green)';
+    st.innerHTML=`✅ <b>Upload successful!</b> All users will now see this data automatically when they open the dashboard URL.<br>
+      <span style="font-size:.65rem;color:var(--t2);font-family:var(--mono)">${publicUrl||''}</span>`;
+    toast('☁️ Cloud upload successful!','var(--green)');
+    updateCloudFileURLDisplay();
+
+    // Also parse and load locally so admin sees it immediately
+    const wb=XLSX.read(bytes,{type:'array'});
+    processWorkbook(wb,file);
+  }catch(err){
+    pb.style.display='none';
+    st.style.display='block';
+    st.style.background='rgba(232,66,58,.1)';st.style.border='1px solid rgba(232,66,58,.2)';st.style.color='var(--red)';
+    st.textContent='❌ Upload failed: '+err.message+' — Check bucket "excel-data" is public in Supabase Storage.';
+  }
+}
+
+function handleCloudDrop(event){
+  const file=event.dataTransfer.files[0];if(!file)return;
+  const input={files:[file]};
+  uploadToCloud(input);
+}
+
+// ── Auto-load from cloud for ALL users on login ──────────────
+async function autoLoadCloudData(){
+  const url=await getCloudFileURL();
+  if(!url){setCloudBannerOffline();return;}
+  showCloudBanner('⏳ Loading data from cloud...');
+  try{
+    const r=await fetch(url+'?t='+Date.now());
+    if(!r.ok){
+      if(r.status===400||r.status===404){setCloudBannerOffline('No cloud data yet');return;}
+      throw new Error('HTTP '+r.status);
+    }
+    const buf=await r.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    processWorkbook(wb,{name:'cloud_loss_data.xlsx'});
+    const cnt=ALL_DATA.length;
+    showCloudBanner(`☁️ Cloud data loaded — ${NUM(cnt)} records`,true);
+    updateCloudBadges(true);
+    setTimeout(()=>hideCloudBanner(),4000);
+  }catch(e){
+    setCloudBannerOffline('Cloud load failed: '+e.message);
+    console.warn('[LossIQ v7] Cloud load:',e);
+  }
+}
+
+function showCloudBanner(msg,success=false){
+  const b=document.getElementById('cloudBanner');
+  const dot=document.getElementById('cloudDot');
+  const msgEl=document.getElementById('cloudBannerMsg');
+  b.style.display='block';
+  b.style.background=success
+    ?'linear-gradient(90deg,rgba(16,185,129,.95),rgba(6,182,212,.9))'
+    :'linear-gradient(90deg,rgba(59,130,246,.92),rgba(139,92,246,.85))';
+  dot.style.background='#fff';
+  msgEl.textContent=msg;
+  // Offset topbar
+  const tb=document.querySelector('.topbar');
+  if(tb)tb.style.top='32px';
+}
+function hideCloudBanner(){
+  const b=document.getElementById('cloudBanner');
+  b.style.display='none';
+  const tb=document.querySelector('.topbar');
+  if(tb)tb.style.top='0';
+}
+function setCloudBannerOffline(msg=''){
+  hideCloudBanner(); // silent offline — don't disturb UI
+  updateCloudBadges(false);
+}
+
+// ── Shared workbook processor (used by both local & cloud uploads) ──────────────
+function processWorkbook(wb,file){
+  const rows1=wb.SheetNames[0]?XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}):[],
+        rows2=wb.SheetNames[1]?XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[1]],{defval:''}):[];
+  const allRaw=[...rows1,...rows2];
+  // Deduplicate by AWB
+  const seen=new Set();let dupCount=0;
+  const deduped=allRaw.filter(r=>{
+    const k=String(r.awb||r.AWB||r['AWB No']||r['AWB Number']||'').trim();
+    if(!k)return true;
+    if(seen.has(k)){dupCount++;return false;}
+    seen.add(k);return true;
+  });
+  ALL_DATA=deduped.map(r=>({
+    actual_lost_date:S(r.actual_lost_date||r['Actual Lost Date']||r['Date']||''),
+    current_movement_type:S(r.current_movement_type||r['Movement Type']||r['Movement']||''),
+    awb:S(r.awb||r.AWB||r['AWB No']||r['AWB Number']||''),
+    consolidation_awb:S(r.consolidation_awb||r['Consolidation AWB']||''),
+    loss_percentage:N(r.loss_percentage||r['Loss %']||0),
+    shipment_value:N(r.shipment_value||r['Shipment Value']||0),
+    loss_value:N(r.loss_value||r['Loss Value']||r['Loss']||0),
+    location:S(r.location||r.Location||''),
+    leg:S(r.leg||r.Leg||''),
+    reason:S(r.reason||r.Reason||''),
+    reason_l1:S(r.reason_l1||r['Reason L1']||r['Reason']||''),
+    attribution_changed:S(r.attribution_changed||r['Attribution Changed']||''),
+    credit_location:S(r.credit_location||r['Credit Location']||''),
+    'Cluster Head':S(r['Cluster Head']||r['cluster_head']||''),
+    Zone:S(r.Zone||r.zone||''),
+    'Regional Head':S(r['Regional Head']||r['regional_head']||''),
+    _month:parseMonth(r.actual_lost_date||r['Actual Lost Date']||r['Date']||''),
+    _rca:''
+  }));
+  FILTERED_DATA=[...ALL_DATA];
+  const actualCount=ALL_DATA.length;
+  saveLoss();
+  populateFilters();
+  renderDashboard();
+  if(typeof switchTab==='function')switchTab('dashboard');
+  updateDatasetInfo();
+
+  // Dup analysis KPI
+  const dupKPI=document.getElementById('dupAnalysisKPI');
+  if(dupKPI){dupKPI.innerHTML=
+    `<div class="kpi blue"><div class="klabel">Total Raw Rows</div><div class="kval blue">${NUM(allRaw.length)}</div></div>`+
+    `<div class="kpi green"><div class="klabel">Unique Records</div><div class="kval green">${NUM(actualCount)}</div></div>`+
+    `<div class="kpi orange"><div class="klabel">Duplicates Removed</div><div class="kval orange">${NUM(dupCount)}</div></div>`+
+    `<div class="kpi red"><div class="klabel">Dup Rate</div><div class="kval red">${allRaw.length?((dupCount/allRaw.length)*100).toFixed(1):0}%</div></div>`;}
+
+  const fname=file?file.name:'cloud_data.xlsx';
+  statusMsg('lossStatus',`✅ ${NUM(actualCount)} unique records loaded (${NUM(dupCount)} duplicates removed) from ${fname}`,'var(--green)');
+  setEl('datasetSub',`${NUM(actualCount)} unique records — ${fname}`);
+}
+
+// ── initUploadPanel — show cloud cards for super admin ──────────────
+function initUploadPanel(){
+  const isSuperAdmin=currentUser&&currentUser.role==='super';
+  const cloudCfg=document.getElementById('cloudConfigCard');
+  const cloudUp=document.getElementById('cloudUploadCard');
+  if(cloudCfg)cloudCfg.style.display=isSuperAdmin?'block':'none';
+  if(cloudUp)cloudUp.style.display=isSuperAdmin?'block':'none';
+  const cols=COLS;
+  const colsEl=document.getElementById('expectedCols');
+  if(colsEl)colsEl.innerHTML=cols.map(c=>`<span style="background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:.62rem;font-family:var(--mono);color:var(--cyan)">${c}</span>`).join('');
+  // restore cloud config inputs
+  getCloudConfig().then(cfg=>{
+    const u=document.getElementById('cfgSupaURL'),k=document.getElementById('cfgSupaKey');
+    if(u&&cfg.url&&!cfg.url.includes('YOUR_PROJECT'))u.value=cfg.url;
+    if(k&&cfg.key)k.value=cfg.key;
+    updateCloudFileURLDisplay();
+    if(cfg.url&&!cfg.url.includes('YOUR_PROJECT'))updateCloudBadges(true);
+  });
+}
 </script>
 </body>
 </html>
