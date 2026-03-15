@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>LossIQ — Shipment Loss Intelligence Platform v9 Final</title>
+<title>LossIQ — Shipment Loss Intelligence Platform v10</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -349,7 +349,7 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
 <div id="loginScreen">
   <div class="lbox">
     <div class="llogo">Loss<span>IQ</span></div>
-    <div class="lsub">Shipment Loss Intelligence Platform v9 ☁️ Auto Sync</div>
+    <div class="lsub">Shipment Loss Intelligence Platform v10 ☁️ Auto Sync</div>
     <label class="llabel">Login With</label>
     <select class="lselect" id="ltype" onchange="toggleLoginType()">
       <option value="mobile">Mobile Number</option>
@@ -2392,10 +2392,10 @@ const CLOUD_PUBLIC_URL = `${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/$
 const CLOUD_USERS_URL  = `${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/users_db.json`;
 
 // ── GITHUB RAW — YOUR ACTUAL REPO (hardcoded) ───────────────
-// Repo: github.com/Karthik221188/index.html
+// Repo: github.com/Karthik221188/lossiq-dashboard
 // Files: loss final 1.xlsx, users.xlsx (committed to repo root)
 const GITHUB_USER      = 'Karthik221188';
-const GITHUB_REPO      = 'index.html';
+const GITHUB_REPO      = 'lossiq-dashboard';
 const GITHUB_BRANCH    = 'main';
 const GITHUB_DATA_FILE = 'loss%20final%201.xlsx';
 const GITHUB_DATA_URL  = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_DATA_FILE}`;
@@ -2448,48 +2448,65 @@ async function fetchBuf(url,ms=45000){
   }catch(e){clearTimeout(tid);return null;}
 }
 
-// ── MASTER DATA LOADER ───────────────────────────────────────
-// Tries GitHub first (raw file always available) then Supabase
-// This guarantees data loads on EVERY device, EVERY browser
+// ── MASTER DATA LOADER v10 ───────────────────────────────────
+// Tries 4 sources in order — guaranteed to work on every device
 async function autoLoadCloudData(){
-  showCloudBanner('⏳ Loading dashboard data from GitHub…');
+  // All possible URLs to try — in order of reliability
+  // jsDelivr CDN serves GitHub files with full CORS support — works on ALL browsers/devices/networks
+  const JSDELIVR_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@${GITHUB_BRANCH}/${GITHUB_DATA_FILE}`;
+  // raw.githubusercontent.com — works on most networks
+  const RAW_GH_URL   = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_DATA_FILE}`;
+  // Supabase — works if Super Admin uploaded there
+  const SUPA_URL_DATA = CLOUD_PUBLIC_URL;
 
-  // ── SOURCE 1: GitHub raw (primary — file is committed, always accessible) ──
-  // Uses cache-busting so the browser never serves stale data
-  let buf = await fetchBuf(GITHUB_DATA_URL+'?nocache='+Date.now(), 60000);
-  if(buf){
-    processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'loss final 1.xlsx'},'GitHub');
-    showCloudBanner('✅ Dashboard data loaded — '+NUM(ALL_DATA.length)+' records',true,'📂 Source: GitHub Repository (live)');
-    updateCloudBadges(true);
-    setTimeout(hideCloudBanner,5000);
-    return;
+  const sources = [
+    { url: JSDELIVR_URL,  name: 'jsDelivr CDN (GitHub)' },
+    { url: RAW_GH_URL,    name: 'GitHub Raw' },
+    { url: SUPA_URL_DATA, name: 'Supabase Cloud' },
+  ];
+
+  for(const src of sources){
+    showCloudBanner('⏳ Loading data via '+src.name+'…');
+    try{
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(), 60000);
+      const resp = await fetch(src.url, {signal:ctrl.signal, cache:'no-store'});
+      clearTimeout(tid);
+      if(!resp.ok){ console.warn('[v10] '+src.name+' HTTP '+resp.status); continue; }
+      const buf = await resp.arrayBuffer();
+      if(!buf||buf.byteLength<500){ console.warn('[v10] '+src.name+' empty/tiny file'); continue; }
+      // Success!
+      processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'loss final 1.xlsx'},src.name);
+      showCloudBanner('✅ Data loaded — '+NUM(ALL_DATA.length)+' records',true,'Source: '+src.name);
+      updateCloudBadges(true);
+      setTimeout(hideCloudBanner,5000);
+      return; // done — stop trying other sources
+    }catch(e){ console.warn('[v10] '+src.name+' failed:',e.message); }
   }
 
-  // ── SOURCE 2: Supabase (Super Admin upload — secondary) ──────────────────
-  showCloudBanner('⏳ GitHub unavailable, trying Supabase…');
-  buf = await fetchBuf(CLOUD_PUBLIC_URL+'?nocache='+Date.now(), 60000);
-  if(buf){
-    processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'loss_data.xlsx'},'Supabase');
-    showCloudBanner('✅ Dashboard data loaded — '+NUM(ALL_DATA.length)+' records',true,'☁️ Source: Supabase Cloud');
-    updateCloudBadges(true);
-    setTimeout(hideCloudBanner,5000);
-    return;
-  }
-
-  // ── BOTH FAILED ───────────────────────────────────────────────────────────
+  // ── ALL SOURCES FAILED — show manual upload option ────────────
   hideCloudBanner();
   updateCloudBadges(false);
-  // Show helpful error with manual upload option
-  showCloudBanner('⚠️ Auto-load failed. If you are Super Admin, use Data Upload tab to upload manually.', false);
-  setTimeout(hideCloudBanner, 10000);
-  console.warn('[LossIQ v9] Both GitHub and Supabase failed to load data.');
+  setEl('dashKPI',`
+    <div style="background:rgba(232,66,58,.08);border:1px solid rgba(232,66,58,.25);border-radius:12px;padding:20px;grid-column:1/-1;text-align:center">
+      <div style="font-size:1.6rem;margin-bottom:8px">⚠️</div>
+      <div style="font-family:var(--hd);font-size:1.1rem;color:var(--red);margin-bottom:8px">DATA LOAD FAILED</div>
+      <div style="font-size:.78rem;color:var(--t2);margin-bottom:12px">
+        Could not fetch <b>loss final 1.xlsx</b> from GitHub or Supabase.<br>
+        Check that the file name is exactly <code style="color:var(--cyan)">loss final 1.xlsx</code> in your GitHub repo.
+      </div>
+      ${currentUser&&currentUser.role==='super'?`<button onclick="switchTab('data')" class="fbtn green-btn" style="margin:0 auto">📤 Upload Manually</button>`:'<div style="color:var(--t2);font-size:.75rem">Please contact your Super Admin (mobile: 9999999999)</div>'}
+    </div>`);
+  console.error('[LossIQ v10] All data sources failed. URLs tried:', sources.map(s=>s.url));
 }
 
 // ── USER SYNC — GitHub first (always has users.xlsx), then Supabase ──────────
 async function syncUsersFromCloud(){
   // SOURCE 1: GitHub users.xlsx (primary — committed to repo, always accessible)
   try{
-    const buf=await fetchBuf(GITHUB_USERS_URL+'?nocache='+Date.now(), 15000);
+    // Try jsDelivr CDN first (best CORS support), then raw GitHub
+      const JSDLVR_USERS = `https://cdn.jsdelivr.net/gh/${GITHUB_USER}/${GITHUB_REPO}@${GITHUB_BRANCH}/users.xlsx`;
+      const buf=await fetchBuf(JSDLVR_USERS, 15000) || await fetchBuf(GITHUB_USERS_URL+'?nocache='+Date.now(), 15000);
     if(buf){
       const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
       const ws=wb.Sheets[wb.SheetNames[0]];
