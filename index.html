@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>LossIQ — Shipment Loss Intelligence Platform v9</title>
+<title>LossIQ — Shipment Loss Intelligence Platform v9 Final</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -920,8 +920,8 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
             <span id="cloudUploadBadge" class="cloud-sync-badge cloud-offline-badge">● Cloud Offline</span>
           </div>
           <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:9px;padding:12px;margin-bottom:12px;font-size:.74rem">
-            <b style="color:var(--green)">How it works:</b>
-            <span style="color:var(--t2)"> You upload the Excel here → File stored in Supabase cloud → All users who open this URL automatically see the latest data. No local file needed on their device.</span>
+            <b style="color:var(--green)">How it works in v9:</b>
+            <span style="color:var(--t2)"> Data auto-loads from <b>GitHub</b> (your committed <code>loss final 1.xlsx</code>) on every login. No upload needed — if the file is in GitHub, all users see it. Use the cloud upload below only to push a newer file to Supabase as backup.</span>
           </div>
           <div class="dropzone" id="cloudDZ" onclick="document.getElementById('cloudFile').click()"
             ondragover="event.preventDefault();this.classList.add('drag')"
@@ -947,7 +947,7 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
       </div>
 
       <div class="card card-accent blue" style="margin-bottom:14px">
-        <div class="ct" style="margin-bottom:12px;color:var(--blue)">📋 How to Upload — 2-Sheet Excel (up to 1 GB)</div>
+        <div class="ct" style="margin-bottom:12px;color:var(--blue)">📋 Data Sources — GitHub Auto-Sync + Manual Cloud Upload</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
           <div class="rca-box" style="padding:12px"><div style="font-size:1.3rem;margin-bottom:5px">1️⃣</div><div style="font-size:.77rem;font-weight:800">Use Chrome or Edge on PC (not mobile)</div></div>
           <div class="rca-box" style="padding:12px"><div style="font-size:1.3rem;margin-bottom:5px">2️⃣</div><div style="font-size:.77rem;font-weight:800">Excel file must have Sheet1 & Sheet2 with same column headers</div></div>
@@ -2368,7 +2368,7 @@ async function initApp(){
     if(ALL_DATA.length){FILTERED_DATA=[...ALL_DATA];populateFilters();renderDashboard();}
     updateDatasetInfo();initUploadPanel();
     renderRCASummaryKPI();
-  }catch(err){console.error('[LossIQ v8] Init error:',err);}
+  }catch(err){console.error('[LossIQ v9] Init error:',err);}
 }
 
 window.addEventListener('DOMContentLoaded',async()=>{
@@ -2391,14 +2391,13 @@ const CLOUD_FILE       = 'loss_data.xlsx';
 const CLOUD_PUBLIC_URL = `${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/${CLOUD_FILE}`;
 const CLOUD_USERS_URL  = `${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/users_db.json`;
 
-// ── GITHUB RAW (fallback — set your details below) ───────────
-// Replace YOUR_USERNAME with your GitHub username e.g. 'karthikg'
-// Replace YOUR_REPO with your repo name e.g. 'lossiq-dashboard'
-// File must be committed to the repo root with EXACT same name
-const GITHUB_USER      = 'YOUR_USERNAME';      // ← FILL THIS
-const GITHUB_REPO      = 'YOUR_REPO';          // ← FILL THIS
+// ── GITHUB RAW — YOUR ACTUAL REPO (hardcoded) ───────────────
+// Repo: github.com/Karthik221188/index.html
+// Files: loss final 1.xlsx, users.xlsx (committed to repo root)
+const GITHUB_USER      = 'Karthik221188';
+const GITHUB_REPO      = 'index.html';
 const GITHUB_BRANCH    = 'main';
-const GITHUB_DATA_FILE = 'loss%20final%201.xlsx'; // "loss final 1.xlsx" URL-encoded
+const GITHUB_DATA_FILE = 'loss%20final%201.xlsx';
 const GITHUB_DATA_URL  = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_DATA_FILE}`;
 const GITHUB_USERS_URL = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/users.xlsx`;
 
@@ -2449,65 +2448,53 @@ async function fetchBuf(url,ms=45000){
   }catch(e){clearTimeout(tid);return null;}
 }
 
-// ── MASTER DATA LOADER — Supabase first, GitHub fallback ─────
+// ── MASTER DATA LOADER ───────────────────────────────────────
+// Tries GitHub first (raw file always available) then Supabase
+// This guarantees data loads on EVERY device, EVERY browser
 async function autoLoadCloudData(){
-  showCloudBanner('⏳ Loading dashboard data…');
+  showCloudBanner('⏳ Loading dashboard data from GitHub…');
 
-  // Source 1: Supabase (always try — Super Admin uploads here)
-  let buf = await fetchBuf(CLOUD_PUBLIC_URL+'?v='+Date.now());
+  // ── SOURCE 1: GitHub raw (primary — file is committed, always accessible) ──
+  // Uses cache-busting so the browser never serves stale data
+  let buf = await fetchBuf(GITHUB_DATA_URL+'?nocache='+Date.now(), 60000);
   if(buf){
-    processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'supabase_data.xlsx'},'Supabase');
-    showCloudBanner('✅ Data loaded — '+NUM(ALL_DATA.length)+' records',true,'Source: Supabase Cloud');
+    processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'loss final 1.xlsx'},'GitHub');
+    showCloudBanner('✅ Dashboard data loaded — '+NUM(ALL_DATA.length)+' records',true,'📂 Source: GitHub Repository (live)');
     updateCloudBadges(true);
     setTimeout(hideCloudBanner,5000);
     return;
   }
 
-  // Source 2: GitHub raw (if configured)
-  if(GITHUB_USER!=='YOUR_USERNAME'){
-    buf = await fetchBuf(GITHUB_DATA_URL+'?v='+Date.now());
-    if(buf){
-      processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'github_data.xlsx'},'GitHub');
-      showCloudBanner('✅ Data loaded — '+NUM(ALL_DATA.length)+' records',true,'Source: GitHub Repository');
-      updateCloudBadges(true);
-      setTimeout(hideCloudBanner,5000);
-      return;
-    }
+  // ── SOURCE 2: Supabase (Super Admin upload — secondary) ──────────────────
+  showCloudBanner('⏳ GitHub unavailable, trying Supabase…');
+  buf = await fetchBuf(CLOUD_PUBLIC_URL+'?nocache='+Date.now(), 60000);
+  if(buf){
+    processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'loss_data.xlsx'},'Supabase');
+    showCloudBanner('✅ Dashboard data loaded — '+NUM(ALL_DATA.length)+' records',true,'☁️ Source: Supabase Cloud');
+    updateCloudBadges(true);
+    setTimeout(hideCloudBanner,5000);
+    return;
   }
 
-  // Both failed
+  // ── BOTH FAILED ───────────────────────────────────────────────────────────
   hideCloudBanner();
   updateCloudBadges(false);
-  const helpMsg = GITHUB_USER==='YOUR_USERNAME'
-    ? '⚠️ No data loaded. Super Admin: go to Data Upload tab and upload Loss.xlsx'
-    : '⚠️ Could not load data from Supabase or GitHub. Check internet / file name.';
-  showCloudBanner(helpMsg,false);
-  setTimeout(hideCloudBanner,8000);
+  // Show helpful error with manual upload option
+  showCloudBanner('⚠️ Auto-load failed. If you are Super Admin, use Data Upload tab to upload manually.', false);
+  setTimeout(hideCloudBanner, 10000);
+  console.warn('[LossIQ v9] Both GitHub and Supabase failed to load data.');
 }
 
-// ── USER SYNC — Supabase first, GitHub users.xlsx fallback ───
+// ── USER SYNC — GitHub first (always has users.xlsx), then Supabase ──────────
 async function syncUsersFromCloud(){
-  // Try Supabase users_db.json
+  // SOURCE 1: GitHub users.xlsx (primary — committed to repo, always accessible)
   try{
-    const r=await fetch(CLOUD_USERS_URL+'?v='+Date.now());
-    if(r.ok){
-      const cu=await r.json();
-      if(cu&&cu.length){
-        const sa=USERS.find(u=>u.mobile==='9999999999');
-        USERS=[sa,...cu.filter(u=>u.mobile!=='9999999999')];
-        await idbPut(K_USERS,USERS);
-        return;
-      }
-    }
-  }catch(e){}
-
-  // Try GitHub users.xlsx
-  if(GITHUB_USER!=='YOUR_USERNAME'){
-    try{
-      const buf=await fetchBuf(GITHUB_USERS_URL+'?v='+Date.now(),10000);
-      if(buf){
-        const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
-        const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    const buf=await fetchBuf(GITHUB_USERS_URL+'?nocache='+Date.now(), 15000);
+    if(buf){
+      const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(rows.length>0){
         const sa=USERS.find(u=>u.mobile==='9999999999');
         const newU=[sa];
         rows.forEach(r=>{
@@ -2521,10 +2508,32 @@ async function syncUsersFromCloud(){
           const role=/regional head|manager|admin/i.test(roleRaw)?'admin':/partner/i.test(roleRaw)?'partner':'user';
           newU.push({name,email,mobile,role,limit,zone:'All',password:pwd,active:true});
         });
-        if(newU.length>1){USERS=newU;await idbPut(K_USERS,USERS);}
+        if(newU.length>1){
+          USERS=newU;
+          await idbPut(K_USERS,USERS);
+          console.log('[LossIQ v9] Users loaded from GitHub:',USERS.length);
+          return;
+        }
       }
-    }catch(e){}
-  }
+    }
+  }catch(e){ console.warn('[LossIQ v9] GitHub users load failed:',e.message); }
+
+  // SOURCE 2: Supabase users_db.json (created when Super Admin adds users via Admin panel)
+  try{
+    const r=await fetch(CLOUD_USERS_URL+'?nocache='+Date.now());
+    if(r.ok){
+      const cu=await r.json();
+      if(cu&&cu.length){
+        const sa=USERS.find(u=>u.mobile==='9999999999');
+        USERS=[sa,...cu.filter(u=>u.mobile!=='9999999999')];
+        await idbPut(K_USERS,USERS);
+        console.log('[LossIQ v9] Users loaded from Supabase:',USERS.length);
+        return;
+      }
+    }
+  }catch(e){ console.warn('[LossIQ v9] Supabase users load failed:',e.message); }
+
+  console.log('[LossIQ v9] Using default/local users');
 }
 
 // ── SAVE USERS to Supabase so ALL devices get them ───────────
