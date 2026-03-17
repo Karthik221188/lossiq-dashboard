@@ -578,12 +578,38 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
         <div class="card"><div class="ch"><div><div class="ct">Regional Head — Loss</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartRHLoss"></canvas></div></div>
         <div class="card"><div class="ch"><div><div class="ct">Regional Head — AWBs</div></div></div><div class="chart-wrap" style="height:260px"><canvas id="chartRHAWB"></canvas></div></div>
       </div>
-      <div class="sh" style="border-color:var(--red)">④ Top Cluster Heads — HIGHEST Loss</div>
+      <!-- ④ CH OVERALL PAN INDIA RANKING — NEW SECTION -->
+      <div class="sh" style="border-color:var(--purple)">④ Cluster Head — PAN India Overall Ranking &nbsp;<span style="font-size:.72rem;font-weight:400;color:var(--t2)">(Rank 1 = Best · Lowest Loss)</span></div>
+      <div class="card" style="margin-bottom:16px;border:1px solid rgba(139,92,246,.3)">
+        <div class="ch">
+          <div>
+            <div class="ct">🏅 Complete PAN India CH Ranking — Know Your Position</div>
+            <div class="cs">Every Cluster Head ranked 1 to N · Rank 1 = Lowest Loss = Best Performer · Colour: 🟢 Top 25% &nbsp;🔵 Top 50% &nbsp;🟡 Bottom 50% &nbsp;🔴 Bottom 25%</div>
+          </div>
+          <div class="ch-actions">
+            <button class="dl" onclick="dlCSV(rankCSV('Cluster Head'),'ch_overall_rank.csv')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="tw" id="chOverallRankTbl"></div>
+      </div>
+      <div class="g2" style="margin-bottom:16px">
+        <div class="card">
+          <div class="ch"><div><div class="ct">CH PAN India — Loss Value Chart</div><div class="cs">Best → Worst (left to right) · 🟢 Top 25% &nbsp;🔴 Bottom 25%</div></div></div>
+          <div class="chart-wrap" style="height:340px"><canvas id="chartCHOverallLoss"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ch"><div><div class="ct">CH PAN India — AWB Count Chart</div></div></div>
+          <div class="chart-wrap" style="height:340px"><canvas id="chartCHOverallAWB"></canvas></div>
+        </div>
+      </div>
+      <!-- ⑤ was ④ -->
+      <div class="sh" style="border-color:var(--red)">⑤ Top Cluster Heads — HIGHEST Loss</div>
       <div class="g2">
         <div class="card"><div class="ch"><div><div class="ct">🔴 High loss performing Cluster </div></div><button class="dl" onclick="dlCSV(rankCSV('Cluster Head'),'ch_rank.csv')">⬇ CSV</button></div><div class="tw" id="chLowTbl"></div></div>
         <div class="card"><div class="ch"><div><div class="ct">Low Clusters — Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartCHLow"></canvas></div></div>
       </div>
-      <div class="sh green">⑤ Top Cluster Heads — LOWEST Loss (Best)</div>
+      <!-- ⑥ was ⑤ -->
+      <div class="sh green">⑥ Top Cluster Heads — LOWEST Loss (Best)</div>
       <div class="g2">
         <div class="card"><div class="ch"><div><div class="ct">🟢 Best Cluster Heads</div></div></div><div class="tw" id="chBestTbl"></div></div>
         <div class="card"><div class="ch"><div><div class="ct">Best Clusters — Chart</div></div></div><div class="chart-wrap" style="height:300px"><canvas id="chartCHBest"></canvas></div></div>
@@ -1587,6 +1613,63 @@ function renderRanking(){
   ]},options:{...baseOpts(),scales:{x:{ticks:CT,grid:{color:CG},stacked:true},y:{ticks:CT,grid:{color:CG},stacked:true}}}});
 
   const chStats=buildStats(d,'Cluster Head');
+
+  // ── ④ CH OVERALL PAN INDIA RANKING — Rank 1 = Best (Lowest Loss) ────────────
+  const chAll=[...chStats].sort((a,b)=>a.loss-b.loss); // ascending: best first
+  const chCount=chAll.length;
+  const grandTotal=ALL_DATA.reduce((s,r)=>s+r.loss_value,0)||1;
+  setEl('chOverallRankTbl', chCount===0
+    ? '<div style="color:var(--t2);padding:16px">No data</div>'
+    : `<table class="dt">
+        <thead><tr>
+          <th>Rank</th><th>Cluster Head</th><th>Zone</th><th>Regional Head</th>
+          <th>AWBs</th><th>Loss ₹</th><th>Avg Loss/AWB</th>
+          <th>FWD AWBs</th><th>RTO AWBs</th><th>% of Total</th><th>Performance Band</th>
+        </tr></thead>
+        <tbody>${chAll.map((r,i)=>{
+          const rank=i+1;
+          const pct=+(r.loss/grandTotal*100).toFixed(2);
+          const q=rank/chCount;
+          const perf=q<=0.25?'🟢 TOP 25%':q<=0.5?'🔵 TOP 50%':q<=0.75?'🟡 BOTTOM 50%':'🔴 BOTTOM 25%';
+          const rowCls=q<=0.25?'good-row':q>0.75?'bad-row':'';
+          const lossColor=q<=0.25?'var(--green)':q>0.75?'var(--red)':'var(--orange)';
+          const mc=rank===1?'m1':rank===2?'m2':rank===3?'m3':'mn';
+          const sample=d.find(x=>x['Cluster Head']===r.name)||{};
+          return `<tr class="${rowCls}">
+            <td><span class="medal ${mc}">${rank}</span></td>
+            <td><b style="color:${q<=0.25?'var(--green)':q>0.75?'var(--red)':'var(--text)'}">${r.name}</b></td>
+            <td class="t2">${sample.Zone||'—'}</td>
+            <td class="t2">${sample['Regional Head']||'—'}</td>
+            <td class="mono vblue">${NUM(r.n)}</td>
+            <td class="mono" style="color:${lossColor};font-weight:700">${INR(r.loss)}</td>
+            <td class="mono vorange">${INR(Math.round(r.avg))}</td>
+            <td class="mono" style="color:#60a5fa">${NUM(r.fwdN)}</td>
+            <td class="mono vorange">${NUM(r.rtoN)}</td>
+            <td>
+              <div class="cbar"><div class="cbarfill" style="width:${Math.min(pct*4,100)}%;background:${q<=0.25?'var(--green)':q>0.75?'var(--red)':'var(--blue)'}"> ${pct>=3?pct+'%':''}</div></div>
+              <div style="font-size:.59rem;color:var(--t3);margin-top:2px">${pct}%</div>
+            </td>
+            <td><span style="font-size:.72rem;font-weight:900;letter-spacing:.3px">${perf}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`
+  );
+  // CH Overall Loss chart — all CHs left=best right=worst colour-coded
+  mkChart('chartCHOverallLoss',{type:'bar',data:{labels:chAll.map(r=>r.name),datasets:[{
+    label:'Loss ₹',data:chAll.map(r=>Math.round(r.loss)),
+    backgroundColor:chAll.map((_,i)=>i/chCount<=0.25?'rgba(16,185,129,.8)':i/chCount>0.75?'rgba(232,66,58,.8)':'rgba(59,130,246,.65)'),
+    datalabels:{display:false}
+  }]},options:{indexAxis:'y',...baseOpts(),plugins:{...baseOpts().plugins,legend:{display:false}},
+    scales:{x:{ticks:{...CT,callback:v=>INR(v)},grid:{color:CG}},y:{ticks:{...CT,font:{size:8}},grid:{display:false}}}}});
+  // CH Overall AWB chart
+  mkChart('chartCHOverallAWB',{type:'bar',data:{labels:chAll.map(r=>r.name),datasets:[{
+    label:'AWBs',data:chAll.map(r=>r.n),
+    backgroundColor:chAll.map((_,i)=>i/chCount<=0.25?'rgba(16,185,129,.8)':i/chCount>0.75?'rgba(249,115,22,.8)':'rgba(59,130,246,.65)'),
+    datalabels:{display:false}
+  }]},options:{indexAxis:'y',...baseOpts(),plugins:{...baseOpts().plugins,legend:{display:false}},
+    scales:{x:{ticks:CT,grid:{color:CG}},y:{ticks:{...CT,font:{size:8}},grid:{display:false}}}}});
+
+  // ── ⑤ & ⑥ Top/Bottom CHs (existing) ────────────────────────────────────────
   setEl('chLowTbl',rankTbl(chStats,topN));rankBarChart('chartCHLow',chStats,topN,false);
   setEl('chBestTbl',rankTbl(chStats,topN,true));rankBarChart('chartCHBest',chStats,topN,true);
 
