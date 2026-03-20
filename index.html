@@ -1,8 +1,45 @@
-    "COLS": [
-        "id",
-        "name",
-        "Sortcentre type",
-        "Patner"
-    ],
-    
-    //... other code
+<html>
+<head>
+    <title>Dashboard</title>
+    <script>
+        // Your existing scripts with the added logic for SC Type and Partner filters
+        function initializeFilters() {
+            // Initialize your multiselect for SC Type and Partner filters
+        }
+
+        function filterData() {
+            // Logic to filter data based on SC Type and Partner selections
+        }
+
+        function expandFilters() {
+            // Logic to expand filters
+        }
+
+        function compressFilters() {
+            // Logic to compress filters
+        }
+    </script>
+</head>
+<body onload="initializeFilters()">
+    <div>
+        <h1>Dashboard</h1>
+        <div id="filters">
+            <!-- Filters for SC Type and Partner -->
+            <select id="scTypeFilter" multiple>
+                <option value="type1">Type 1</option>
+                <option value="type2">Type 2</option>
+                <!-- Add more options as needed -->
+            </select>
+            <select id="partnerFilter" multiple>
+                <option value="partner1">Partner 1</option>
+                <option value="partner2">Partner 2</option>
+                <!-- Add more options as needed -->
+            </select>
+            <button onclick="filterData()">Apply Filters</button>
+            <button onclick="expandFilters()">Expand</button>
+            <button onclick="compressFilters()">Compress</button>
+        </div>
+        <!-- Include sections for dashboard, summary, ranking, partner, performance tabs here -->
+    </div>
+</body>
+</html>
