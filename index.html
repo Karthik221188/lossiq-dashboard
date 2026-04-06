@@ -1084,7 +1084,7 @@ textarea.finput{resize:vertical;min-height:100px;line-height:1.5}
           </div>
           <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:9px;padding:12px;margin-bottom:12px;font-size:.74rem">
             <b style="color:var(--green)">How it works in v9:</b>
-            <span style="color:var(--t2)"> Data auto-loads from <b>GitHub</b> (your committed <code>loss final 1.xlsx</code>) on every login. No upload needed — if the file is in GitHub, all users see it. Use the cloud upload below only to push a newer file to Supabase as backup.</span>
+            <span style="color:var(--t2)"> Data auto-loads from <b>GitHub</b> (your committed <code>loss_data.xlsx</code>) on every login. No upload needed — if the file is in GitHub, all users see it. Use the cloud upload below only to push a newer file to Supabase as backup.</span>
           </div>
           <div class="dropzone" id="cloudDZ" onclick="document.getElementById('cloudFile').click()"
             ondragover="event.preventDefault();this.classList.add('drag')"
@@ -2926,7 +2926,7 @@ const CLOUD_USERS_URL  = `${SUPA_URL}/storage/v1/object/public/${CLOUD_BUCKET}/u
 
 // ── GITHUB RAW — YOUR ACTUAL REPO (hardcoded) ───────────────
 // Repo: github.com/Karthik221188/lossiq-dashboard
-// Files: loss final 1.xlsx, users.xlsx (committed to repo root)
+// Files: loss_data.xlsx, users.xlsx (committed to repo root)
 const GITHUB_USER      = 'Karthik221188';
 const GITHUB_REPO      = 'lossiq-dashboard';
 const GITHUB_BRANCH    = 'main';
@@ -3009,7 +3009,7 @@ async function autoLoadCloudData(){
       const buf = await resp.arrayBuffer();
       if(!buf||buf.byteLength<500){ console.warn('[v10] '+src.name+' empty/tiny file'); continue; }
       // Success!
-      processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'loss final 1.xlsx'},src.name);
+      processWorkbook(XLSX.read(new Uint8Array(buf),{type:'array'}),{name:'loss_data.xlsx'},src.name);
       showCloudBanner('✅ Data loaded — '+NUM(ALL_DATA.length)+' records',true,'Source: '+src.name);
       updateCloudBadges(true);
       setTimeout(hideCloudBanner,5000);
@@ -3025,8 +3025,8 @@ async function autoLoadCloudData(){
       <div style="font-size:1.6rem;margin-bottom:8px">⚠️</div>
       <div style="font-family:var(--hd);font-size:1.1rem;color:var(--red);margin-bottom:8px">DATA LOAD FAILED</div>
       <div style="font-size:.78rem;color:var(--t2);margin-bottom:12px">
-        Could not fetch <b>loss final 1.xlsx</b> from GitHub or Supabase.<br>
-        Check that the file name is exactly <code style="color:var(--cyan)">loss final 1.xlsx</code> in your GitHub repo.
+        Could not fetch <b>loss_data.xlsx</b> from GitHub or Supabase.<br>
+        Check that the file name is exactly <code style="color:var(--cyan)">loss_data.xlsx</code> in your GitHub repo.
       </div>
       ${currentUser&&currentUser.role==='super'?`<button onclick="switchTab('data')" class="fbtn green-btn" style="margin:0 auto">📤 Upload Manually</button>`:'<div style="color:var(--t2);font-size:.75rem">Please contact your Super Admin (mobile: 9999999999)</div>'}
     </div>`);
@@ -3338,7 +3338,7 @@ function renderPartnerPerf(){
       '<td>'+mom+'</td>'+
     '</tr>';
   });
-  setEl('ppSummaryBody',pHtml||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--t2)">No data — upload loss final 1.xlsx first</td></tr>');
+  setEl('ppSummaryBody',pHtml||'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--t2)">No data — upload loss_data.xlsx first</td></tr>');
 
   // ── Sort Centre Detail ──
   var scMap={};
