@@ -1,0 +1,21 @@
+{
+  "name": "lossiq-dashboard",
+  "version": "1.0.0",
+  "description": "LossIQ — Shipment Loss Intelligence Platform",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "build": "echo 'No build step required for vanilla HTML project'",
+    "lint": "echo 'No linting configured'"
+  },
+  "keywords": [
+    "dashboard",
+    "analytics",
+    "loss-intelligence"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.12"
+  }
+}
